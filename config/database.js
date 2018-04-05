@@ -7,7 +7,7 @@ const mongoose = require('mongoose')
  * Constructs a connection string for mongoose.
  */
 const construct = () => {
-  return `mongodb://${process.env.MONGODB_USER}:${process.env.MONGODB_PWD}@${process.env.MONGODB_IP}/${process.env.MONGODB_DB}?authSource=admin`
+  return `mongodb://${process.env.MONGODB_USER}:${process.env.MONGODB_PWD}@${process.env.MONGODB_IP}/${process.env.MONGODB_DB}${process.env.MONGODB_AUTHSRC}`
 }
 
 module.exports = {
