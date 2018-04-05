@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="/css/main.css">
+    {{#if _sections.head}}
+      {{{_sections.head}}}
+    {{else}}
+      <title>Niddabot: Discord | Nidawi.me</title>
+    {{/if}}
+</head>
+<body>
+    <header>
+      <div class="view-wrapper">
+        <h1>Niddabot</h1>
+        <nav>
+          <ul>
+            <li><a href="/" title="Return to the landing page.">Home</a></li> | 
+            <li><a href="/about" title="Find out more about Niddabot: Discord and her features.">About</a></li> | 
+            <li><a href="/" title="Register an account or log in.">Register</a></li>
+          </ul>
+        </nav>
+        {{>account}}
+        <div class="account">
+          <p>awd</p>
+          <img src="/img/niddabot.png"> <!--/img/nouser.png-->
+          <div class="acc-dropdown">
+            <a href="/user">User Info</a>
+            <a href="/user/repos">Repos</a>
+            <a href="/user/signout">Sign out</a>
+          </div>
+        </div>
+      </div>
+  </header>
+  <div class="content">
+    {{>flash}}
+    <div class="view-wrapper">
+      {{{body}}}
+    </div>
+  </div>
+  <script type="text/javascript" src="/js/helpers.js"></script>
+</body>
+</html>

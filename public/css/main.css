@@ -1,0 +1,244 @@
+/* COLOURS
+  Dark: rgb(25, 76, 140);
+  Medium: rgb(0, 86, 125);
+  Light: rgb(0, 123, 161);
+*/
+
+::-webkit-scrollbar-track
+{
+  box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
+}
+::-webkit-scrollbar
+{
+  width: 12px;
+  background: rgb(56, 55, 54);
+}
+::-webkit-scrollbar-thumb
+{
+  box-shadow: inset 0 0 6px rgba(0,0,0,.3);
+  background: rgb(25, 76, 140);
+}
+
+body {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+}
+h1, h2, h3, h4, p {
+  padding: 0;
+  margin: 0;
+}
+
+header {
+  display: block;
+  position: relative;
+  background: rgb(31, 30, 29);
+  min-width: 100%;
+  min-width: 960px;
+  height: 60px;
+  top: 0;
+  font-family: "Courier";
+  color: white;
+  margin: 0;
+  padding: 0;
+}
+header * {
+  margin: 0;
+  padding: 0;
+  display: inline-block;
+}
+header h1 {
+  position: relative;
+  font-size: 30px;
+  padding: 5px;
+  margin-left: 5px;
+  font-weight: 900;
+  user-select: none;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgb(0, 86, 125);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+header img {
+  height: 100%;
+}
+header nav {
+  position: absolute;
+  padding: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+header nav ul {
+  position: relative;
+  list-style: none;
+  user-select: none;
+  margin: 0px;
+  padding: 0px;
+  
+}
+header nav li {
+  padding: 5px;
+}
+header nav li:hover {
+  color: white;
+  background: rgb(0, 86, 125);
+}
+header nav a {
+  font-size: 20px;
+  text-decoration: none;
+  margin: 0px;
+  padding: 0px;
+  color: rgb(217, 217, 214);
+  font-weight: 600;
+}
+
+/* ACCOUNT */
+.account {
+  position: relative;
+  float: right;
+  top: 0px;
+  right: 0px;
+  height: 100%;
+  transition: all 0.2s ease-in-out;
+}
+.account p {
+  display: none;
+  position: absolute;
+  font-size: 30px;
+  font-weight: bold;
+  right: 70px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgb(0, 86, 125);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.account img {
+  display: inline-block;
+  margin: 10px;
+  height: calc(100% - 20px);
+  align-content: center;
+  border-radius: 25px;
+}
+.account:hover > .acc-dropdown {
+  display: block;
+}
+.account:hover > img {
+  box-shadow: 0px 0px 2px 5px rgb(0, 86, 125);
+}
+.account:hover > p {
+  display: inline-block;
+}
+.account .acc-dropdown {
+  display: none;
+  position: absolute;
+  width: 100%;
+  min-width: 150px;
+  z-index: 1;
+  top: 100%;
+  right: 0px;
+  background: rgb(33, 32, 31);
+  padding: 5px;
+  text-align: center;
+}
+.account .acc-dropdown a {
+  display: block;
+  font-size: 20px;
+}
+.account .acc-dropdown a:visited, .account .acc-dropdown a {
+  color: rgb(217, 217, 214);
+  text-decoration: none;
+}
+.account .acc-dropdown a:hover {
+  background: rgb(0, 86, 125);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+.content {
+  display: block;
+  position: absolute;
+  overflow: auto;
+  min-width: 100%;
+  min-height: calc(100% - 60px);
+  background: rgb(33, 32, 31);
+}
+.view-wrapper {
+  display: block;
+  min-width: calc(960px);
+  max-width: calc(1200px);
+  height: 100%;
+  margin: auto;
+}
+.content .view-wrapper {
+  color: rgb(217, 217, 214);
+  background: rgb(46, 44, 43);
+  min-width: calc(960px - 20px);
+  max-width: calc(1200px - 20px);
+  padding: 10px;
+}
+.flashmsg .view-wrapper {
+  background: initial;
+}
+
+
+
+
+/* FLASH MESSAGES */
+.flashmsg {
+  display: block;
+  width: calc(100% - 24px);
+  z-index: 10;
+  font-size: 30px;
+  font-family: 'Fira Sans', sans-serif;
+  color: white;
+  padding: 10px;
+}
+.flashmsg .text {
+  display: block;
+  position: relative;
+  height: 100%;
+  width: calc(100%);
+  text-align: center;
+}
+.flashmsg .box {
+  display: block;
+  position: absolute;
+  top: 10px;
+}
+.flashmsg button {
+  color: white;
+  outline: none;
+  font-size: 25px;
+  padding: 2px 5px 2px 5px;
+  margin: 0px;
+}
+.flashmsg button:hover {
+  filter: brightness(1.1);
+}
+.flashmsg-error {
+  background: rgba(207, 67, 46, 0.5);
+  border: 2px solid rgba(189, 56, 35, 0.75);
+}
+.flashmsg-success {
+  background: rgba(48, 212, 56, 0.5);
+  border: 2px solid rgba(24, 165, 31, 0.75);
+}
+.flashmsg-notification {
+  background: rgba(219, 179, 84, 0.5);
+  border: 2px solid rgba(219, 179, 84, 0.75);
+}
