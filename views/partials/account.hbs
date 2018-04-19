@@ -1,14 +1,23 @@
-{{#section 'head'}}
-  <title>User | Niddabot: Discord | Nidawi.me</title>
-{{/section}}
-{{#if discord}}
+{{#if discord.account}}
   <div class="account">
-    <p>user</p>
+    <p>{{discord.account.name}}</p>
     <img src="/img/niddabot.png">
     <div class="acc-dropdown">
-      <a href="/user">User Info</a>
-      <a href="/user/repos">Repos</a>
-      <a href="/user/signout">Sign out</a>
+      <a href="/user" title="Get Niddabot onto your server!">Get Niddabot!</a>
+      <hr>
+      <a href="/user">Account</a>
+      <a href="/user">Servers</a>
+      <a href="/signout">Sign out</a>
+    </div>
+  </div>
+{{else}}
+  <div class="account">
+    <p>Account</p>
+    <img src="/img/niddabot.png">
+    <div class="acc-dropdown">
+      <a href="/signin" title="Sign in with your Niddabot Account.">Sign in</a>
+      <hr>
+      <a href="/signup" title="Sign up and create a free Niddabot Account.">Sign up</a>
     </div>
   </div>
 {{/if}}

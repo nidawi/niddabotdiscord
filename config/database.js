@@ -12,7 +12,7 @@ const construct = () => {
 
 module.exports = {
   /**
-   * Initializes a mongoose connection to a db on mLabs.
+   * Initializes a mongoose connection to a db.
    */
   create: async () => {
     // Setup

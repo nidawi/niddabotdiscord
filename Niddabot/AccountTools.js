@@ -1,0 +1,123 @@
+// Account tools for handling user accounts.
+
+const NiddabotAccount = require('./NiddabotAccount')
+const Account = require('../models/Schemas').account
+const User = require('../models/Schemas').user
+
+const helpers = require('../lib/schemaHelpers')
+const sanitize = require('mongo-sanitize')
+
+const users = require('./UserTools')
+const servers = require('./ServerTools')
+
+const createAccount = (data, transform = true) => {
+  // Create an account.
+  return new Promise(async (resolve, reject) => {
+    try {
+      // Init new account. Verifications are in the schema.
+      const newAccount = new Account(data)
+
+      newAccount.save((err, acc) => {
+        if (err) reject(err)
+        else resolve((transform) ? transformAccount(acc) : acc)
+      })
+    } catch (err) { reject(err) }
+  })
+}
+const updateAccount = async (id, newData, transform = true) => {
+  const account = await Account.findByIdAndUpdate(id, newData)
+  return (transform) ? transformAccount(account) : account
+}
+
+const fetchAccount = async (name, transform = true) => {
+  // Fetch an account.
+  const account = await Account.findOne({ name: sanitize(name) })
+  return (transform) ? transformAccount(account) : account
+}
+const fetchAccountById = async (id, transform = true) => {
+  const account = await Account.findById(sanitize(id))
+  return (transform) ? transformAccount(account) : account
+}
+
+const transformAccount = acc => {
+  return {
+    id: acc._id,
+    name: acc.name,
+    email: acc.email,
+    avatar: acc.avatar,
+    type: acc.type,
+    status: acc.status,
+    ownedServers: acc.ownedServers,
+    discordUser: acc.discordUser,
+    nationality: acc.nationality,
+    receiveEmails: acc.receiveEmails
+  }
+}
+
+const getAccount = async (name, password) => {
+  // Check for basic verification (essentially the things that schemas would do for us but this isn't a save or an update so we will do it manually)
+  const errs = []
+  if (!name || typeof name !== 'string') errs.push(new Error('Please enter your Account Name.'))
+  else if (!helpers.validateCharacters(name)) errs.push(new Error('Account Name contains invalid characters.')) // Names cannot contain any other characters than these.
+  if (!password || typeof password !== 'string') errs.push(new Error('Please enter your password.'))
+  if (errs.length > 0) throw helpers.multiError(errs) // If an error occured we throw them.
+
+  // Verifications are complete. Proceed with fetching and checking.
+  try {
+    const account = await fetchAccount(name, false) // Fetch the user.
+    if (account && await account.comparePasswords(password)) return transformAccount(account)
+  } catch (err) {
+    console.log(err.message)
+    throw new Error('Something went wrong. Please try again later.')
+  } // We don't want to expose mongo errors.
+  throw new Error('No account found for that Account Name/password combination.') // No error and no user, that means no user was found for the combo.
+}
+const verifyDatabase = async (log = false) => {
+  const accounts = await Account.find()
+  const adminAccount = await fetchAccount('nidawi', false) // Check if Admin account exists.
+  if (!adminAccount) {
+    // Admin account does not exist. Create it.
+    if (log) console.log('Admin Account missing. Creating...')
+    try {
+      const newAccount = await createAccount({
+        name: 'nidawi',
+        pass: process.env.NIDDABOT_DEV_PW,
+        email: 'nidawi93@outlook.com',
+        nationality: 'Sweden',
+        type: 'admin',
+        acceptedTerms: true,
+        receiveEmails: true
+      })
+      if (log) console.log('Admin Account created.')
+      return newAccount.id
+    } catch (err) {
+      if (log) console.log('Admin Account failed to create: ' + err.message)
+      return undefined
+    }
+  } else {
+    if (log) console.log(`Admin Account exists. Name: ${adminAccount.name}, Id: ${adminAccount._id}, Created: ${adminAccount.createdAt}`)
+    if (log) console.log(`Found a total of ${accounts.length} accounts.`)
+    return adminAccount.id
+  }
+}
+
+/**
+ * d
+ * @param {*} id d
+ * @returns {NiddabotAccount}
+ */
+const getNiddabotAccount = async id => {
+  const nidAcc = new NiddabotAccount()
+  const acc = await fetchAccountById(id)
+  return Object.assign(nidAcc, acc)
+}
+
+module.exports = {
+  createAccount: createAccount,
+  getAccount: getAccount,
+  fetchAccount: fetchAccount,
+  fetchAccountById: fetchAccountById,
+  getNiddabotAccount: getNiddabotAccount,
+  updateAccount: updateAccount,
+  verifyDatabase: verifyDatabase
+}

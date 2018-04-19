@@ -1,0 +1,35 @@
+{{#section 'head'}}
+  <title>Get Niddabot! | Niddabot: Discord | Nidawi.me</title>
+  <link rel="stylesheet" type="text/css" href="/css/user.css">
+{{/section}}
+<div class="page-heading">
+  <img src="/img/niddabot.png">
+  <h1 class="title">Niddabot</h1>
+  <p class="flavour">More than your average chat bot. She's your friend and loyal companion through your digital life.</p>
+</div>
+<hr>
+<h1>Get Niddabot!</h1>
+<hr>
+<p>
+  Here you can make Niddabot join your Discord server! However, she will need a few permissions from you first to do so. Below is a list of permissions that Niddabot requires to properly:
+  <ul>
+    <li>
+      A server for Niddabot to join.
+      <blockquote>You need to have the <b>Manage Server</b> permission to do this. Without a server you can still enjoy Niddabot's personal features by contacting her directly through DMs.</blockquote>
+      <blockquote>You also need to provide Niddabot with <b>Administrator</b> privileges on the server for her to function properly. While this is, strictly speaking, optional, it is strongly recommended to
+      grant her this permission as it will ensure that all of her features function properly. She will, naturally, not abuse the power that you bestow upon her. That's just not who she is.</blockquote>
+    </li>
+    <li>
+      Access to your username, avatar, and e-mail address.
+      <blockquote>This is used to identify you as a server owner (and as a Discord User in general, too!). It also automatically creates a Niddabot User Account for you with admin rights! Neat! <i>Knowledge of your e-mail address is used for special occasions (such as in the case of disputes). It will not be used for anything else, nor will it overwrite the e-mail you provided for your Niddabot account or your e-mail settings.</i></blockquote>
+    </li>
+  </ul>
+</p>
+<form action="/auth/guild" method="POST">
+  <input type="hidden" name="_csrf" value="{{csrfToken}}">
+  <p>That's all! So, what are you waiting for? Get Niddabot now and enjoy your <i>ascension</i>!</p>
+  <div class="submit-wrapper">
+    <input type="submit" class="confirm" value="I want Niddabot to join my Server!">
+    <input type="submit" class="cancel" value="I want to Authenticate Niddabot!" formaction="/auth/personal">
+  </div>
+</form>

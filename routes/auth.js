@@ -3,33 +3,86 @@
 
 const express = require('express')
 const router = express.Router()
+
+const account = require('../Niddabot/AccountTools')
 const discord = require('../Niddabot/DiscordTools')
+const server = require('../Niddabot/ServerTools')
+const user = require('../Niddabot/UserTools')
+
+router.route('*')
+  .all((req, res, next) => {
+    // If you're not signed in, nothing here should work.
+    if (!req.session.discord || !req.session.discord.account) next(new Error(401))
+    else next()
+  })
 
 router.route('/')
-  .post(async (req, res, next) => {
-    return res.sendStatus(404)
-  })
   .get(async (req, res, next) => {
     // GET = Originates from Discord during the standard OAuth authentication flow.
     // We need to verify the stored state that was generated earlier in order to verify that the request is legitimate.
     if (!req.query.state || !req.query.code) {
+      // If data is missing, terminate the request.
       req.session.flash = { type: 'error', message: `Missing data!` }
       return res.status(400).redirect('/')
     }
     if (!req.session.state || req.query.state !== req.session.state) {
-      req.session.flash = { type: 'error', message: `Invalid session!` }
-      return res.status(400).redirect('/')
+      // If the states are not the same, terminate the request.
+      // req.session.flash = { type: 'error', message: `Invalid session!` }
+      // return res.status(400).redirect('/')
     }
 
-    return res.sendStatus(404)
+    try {
+      // First, we need to exchange the code for a token and verify that it works out alright.
+      const tokenData = await discord.requestToken(req.query.code) // If this succeeds, we got the access token we need and Niddabot will join the server.
+      if (!tokenData) {
+        req.session.flash = { type: 'error', message: `Token Exchange failed. Please try again.` }
+        return res.status(500).redirect('/')
+      }
+      console.log('tokenData DONE')
+      // Register the server.
+      // --> Server doesn't get created!
+      const requestedServer = await server.addServer(req.query.guild_id, req.session.discord.account.id)
+      console.log('requestedServer DONE', requestedServer)
+
+      // Create a user. Whenever an account adds a server, they will also be added as a Niddabot User. If they already exist, the User Account will be edited.
+      const discordUser = await user.addUser(undefined, req.session.discord.account.id, undefined, tokenData)
+      console.log('discordUser DONE')
+
+      // Update the current user's account.
+      // --> Doesn't actually update the session!
+      req.session.discord.account = await account.updateAccount(req.session.discord.account.id, {
+        discordUser: discordUser.id,
+        ownedServers: (!requestedServer) ? req.session.discord.account.ownedServers : [...req.session.discord.account.ownedServers, requestedServer.id]
+      })
+      console.log('accountUPDATE DONE')
+
+      req.session.flash = { type: 'success', message: `Niddabot has been authenticated! Yay!` }
+      return res.status(200).redirect('/')
+    } catch (err) {
+      console.log(err.message)
+      return next(err)
+    }
   })
 
-router.route('/get')
-  .all((req, res, next) => {
+router.route('/guild')
+  .post((req, res, next) => {
     // This route directs the user to authorize Niddabot to connect to one of their servers.
     // In this method we use express-session to store a state that we use to track the progress. Calling this route manually will reset the state.
     req.session.state = discord.generateStateToken() // Generate a state token to use for validation.
-    return res.send(discord.getAuthenticationString(req.session.state))
+    return res.redirect(discord.getAuthenticationString(req.session.state))
+  })
+
+router.route('/personal')
+  .post((req, res, next) => {
+    // This route directs the user to authenticate Niddabot and grant her an access token, without joining a server.
+    // In this method we use express-session to store a state that we use to track the progress. Calling this route manually will reset the state.
+    req.session.state = discord.generateStateToken() // Generate a state token to use for validation.
+    return res.redirect(discord.generatePersonalAuthString(req.session.state))
   })
 
 module.exports = router
+
+/*
+  Response looks like this:
+  https://discord.nidawi.me/auth?state=8zh67vg1xckm0uy&code=fGMkq8gqY9jPIFuXsqoc0vRQXuXeU8&guild_id=426866271276105750&permissions=8
+*/

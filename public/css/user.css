@@ -1,0 +1,137 @@
+/* COLOURS
+  Theme: rgb(31, 30, 29);
+  Highlight: rgb(0, 86, 125);
+  White: rgb(217, 217, 214);
+*/
+
+/* OVERWRITES */
+.content .view-wrapper {
+
+}
+
+.content .narrow-view {
+  margin: auto;
+  width: 70%;
+}
+
+.narrow-view hr {
+  border-color: rgb(0, 86, 125);
+}
+.narrow-view h1 {
+  text-align: center;
+  color: rgb(217, 217, 214);
+  margin: 0 0 15px 0;
+}
+.narrow-view p {
+  color: rgb(217, 217, 214);
+  font-size: 20px;
+  margin: 15px 0 15px 0;
+}
+
+.narrow-view .narrow-heading {
+  font-family: 'Hi Melody', cursive;
+  margin: 20px 0 20px 0;
+}
+.narrow-view .narrow-heading .title {
+  color: rgb(0, 86, 125);
+  font-size: 40px;
+  margin: 0;
+}
+.narrow-view .narrow-heading .flavour {
+  color: rgb(217, 217, 214);
+  text-align: center;
+  font-style: italic;
+  font-size: 14px;
+  margin: 0;
+  margin-top: 2px;
+}
+
+.narrow-view a {
+  color: rgb(15, 150, 212);
+}
+.narrow-view a:visited {
+  color: rgb(0, 86, 125);
+}
+
+form {
+  font-size: 20px;
+}
+form * {
+  transition: all 0.30s ease-in-out;
+  outline: none;
+}
+
+form .details-wrapper {
+  
+}
+form .details-wrapper *:not(:last-child) {
+  margin: 0px 0 6px 0;
+}
+form .details-wrapper input[type=text], form .details-wrapper input[type=password], form .details-wrapper select {
+  border: 1px solid rgb(105, 105, 105);
+  background: rgb(31, 30, 29);
+  color: rgb(217, 217, 214);
+  width: calc(100% - 10px - 2px);
+  padding: 5px;
+  font-size: 22px;
+}
+form .details-wrapper select {
+  width: 100%;
+}
+form .details-wrapper input[type=text]:hover, form .details-wrapper input[type=password]:hover, form .details-wrapper select:hover {
+  border: 1px solid rgb(217, 217, 214);
+}
+form .details-wrapper input[type=text]:focus, form .details-wrapper input[type=password]:focus, form .details-wrapper select:focus {
+  border: 1px solid rgb(0, 86, 125);
+  box-shadow: 0 0 10px rgb(0, 86, 125);
+}
+
+
+form .terms-wrapper {
+  margin: 20px 0 20px 0;
+}
+form .terms-wrapper ul, li {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+form .terms-wrapper li:not(:last-child) {
+  margin: 0px 0 6px 0;
+}
+form .terms-wrapper input[type=checkbox] {
+  margin-right: 20px;
+}
+
+
+.submit-wrapper {
+  margin: 10px 0 10px 0;
+}
+.submit-wrapper *:not(:last-child) {
+  margin: 0px 0 12px 0;
+}
+.submit-wrapper input[type=submit] {
+  display: inline-block;
+  position: relative;
+  font-size: 22px;
+  width: 100%;
+  height: 40px;
+  font-weight: bold;
+}
+.submit-wrapper input[type=submit]:hover {
+  filter: brightness(120%);
+}
+.submit-wrapper .confirm {
+  border: 1px solid rgb(31, 30, 29);
+  background: rgb(15, 150, 212);
+  color: rgb(217, 217, 214);
+}
+.submit-wrapper .cancel {
+  border: 1px solid rgb(0, 86, 125);
+  background: rgb(31, 30, 29);
+  color: rgb(15, 150, 212);
+}
+.submit-wrapper .facebook {
+  border: 1px solid rgb(31, 30, 29);
+  background: rgb(10, 64, 134);
+  color: rgb(217, 217, 214);
+}

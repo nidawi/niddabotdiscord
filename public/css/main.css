@@ -24,6 +24,7 @@ body {
   height: 100%;
   padding: 0;
   margin: 0;
+  /*font-family: 'Hi Melody', cursive;*/
 }
 h1, h2, h3, h4, p {
   padding: 0;
@@ -33,13 +34,13 @@ h1, h2, h3, h4, p {
 header {
   display: block;
   position: relative;
-  background: rgb(31, 30, 29);
+  background: rgb(22, 22, 22);
   min-width: 100%;
   min-width: 960px;
   height: 60px;
   top: 0;
-  font-family: "Courier";
   color: white;
+  font-family: "Courier";
   margin: 0;
   padding: 0;
 }
@@ -77,10 +78,11 @@ header nav ul {
   user-select: none;
   margin: 0px;
   padding: 0px;
-  
 }
 header nav li {
   padding: 5px;
+  padding-left: 7px;
+  padding-right: 7px;
 }
 header nav li:hover {
   color: white;
@@ -105,7 +107,7 @@ header nav a {
   transition: all 0.2s ease-in-out;
 }
 .account p {
-  display: none;
+  display: inline-block;
   position: absolute;
   font-size: 30px;
   font-weight: bold;
@@ -130,9 +132,6 @@ header nav a {
 .account:hover > img {
   box-shadow: 0px 0px 2px 5px rgb(0, 86, 125);
 }
-.account:hover > p {
-  display: inline-block;
-}
 .account .acc-dropdown {
   display: none;
   position: absolute;
@@ -141,13 +140,19 @@ header nav a {
   z-index: 1;
   top: 100%;
   right: 0px;
-  background: rgb(33, 32, 31);
+  background: rgb(22, 22, 22);
   padding: 5px;
   text-align: center;
+}
+.account .acc-dropdown * {
+  margin: 2px 0 2px 0;
 }
 .account .acc-dropdown a {
   display: block;
   font-size: 20px;
+}
+.account .acc-dropdown hr {
+  width: 90%;
 }
 .account .acc-dropdown a:visited, .account .acc-dropdown a {
   color: rgb(217, 217, 214);
@@ -175,7 +180,13 @@ header nav a {
   overflow: auto;
   min-width: 100%;
   min-height: calc(100% - 60px);
-  background: rgb(33, 32, 31);
+  background: rgb(19, 30, 43);
+  /*
+  background: url('/img/wallpaper.jpg'); rgb(37, 37, 36);
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center center;
+  */
 }
 .view-wrapper {
   display: block;
@@ -186,11 +197,52 @@ header nav a {
 }
 .content .view-wrapper {
   color: rgb(217, 217, 214);
-  background: rgb(46, 44, 43);
+  background: rgba(10, 10, 10, 0.75);
   min-width: calc(960px - 20px);
   max-width: calc(1200px - 20px);
   padding: 10px;
 }
+
+.content .view-wrapper hr {
+  border-color: rgb(0, 86, 125);
+}
+.content .view-wrapper .page-heading {
+  font-family: 'Hi Melody', cursive;
+  margin: 0px 0 20px 0;
+  text-align: center;
+}
+.content .view-wrapper .page-heading img {
+  display: none;
+}
+.content .view-wrapper .page-heading .title {
+  color: rgb(0, 86, 125);
+  font-size: 40px;
+  margin: 0;
+}
+.content .view-wrapper .page-heading .flavour {
+  color: rgb(217, 217, 214);
+  font-style: italic;
+  font-size: 14px;
+  margin: 0;
+  margin-top: 2px;
+}
+.content .view-wrapper h1 {
+  text-align: center;
+  color: rgb(217, 217, 214);
+  margin: 0 0 15px 0;
+}
+.content .view-wrapper p {
+  color: rgb(217, 217, 214);
+  font-size: 20px;
+  margin: 15px 0 15px 0;
+}
+.content .view-wrapper a {
+  color: rgb(15, 150, 212);
+}
+.content .view-wrapper a:visited {
+  color: rgb(0, 86, 125);
+}
+
 .flashmsg .view-wrapper {
   background: initial;
 }
@@ -201,24 +253,24 @@ header nav a {
 /* FLASH MESSAGES */
 .flashmsg {
   display: block;
-  width: calc(100% - 24px);
+  width: calc(100% - 4px);
   z-index: 10;
   font-size: 30px;
   font-family: 'Fira Sans', sans-serif;
   color: white;
-  padding: 10px;
+  user-select: none;
 }
 .flashmsg .text {
-  display: block;
+  display: inline-block;
   position: relative;
   height: 100%;
-  width: calc(100%);
+  width: calc(100% - 35px);
   text-align: center;
 }
 .flashmsg .box {
   display: block;
-  position: absolute;
-  top: 10px;
+  position: relative;
+  float: right;
 }
 .flashmsg button {
   color: white;
