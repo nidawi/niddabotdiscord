@@ -17,7 +17,6 @@ const addUser = async (discordId, niddabotAccountId = undefined, niddabotRank = 
 
   if (tokenData) user.tokenData = tokenData
   user.discordId = userInfo.discordId
-  user.discordInfo = userInfo.discordInfo
 
   await user.save()
   return (transform) ? transformUser(user) : user
@@ -47,7 +46,6 @@ const getUser = async (id, transform = true) => {
   return (transform) ? transformUser(user) : user
 }
 
-
 /**
  * d
  * @param {*} id d
@@ -55,35 +53,17 @@ const getUser = async (id, transform = true) => {
  * @returns {NiddabotUser}
  */
 const getNiddabotUser = async (id, discordId) => {
-  const user = (discordId) ? await findUser(discord) : await getUser(id)
-  const NidUser = Object.assign(new NiddabotUser(), user)
-  return NidUser
+  const user = ((discordId) ? await findUser(discordId) : await getUser(id)) || { discordId: discordId }
+
+  // The user has a token. Use it.
+  user.discordInfo = (user.tokenData) ? await discord.requestUser(user.tokenData.accessToken, undefined) : await discord.requestUser(undefined, discordId || user.discordId)
+  // Provide limited Token Information.
+  if (user.TokenData) user.tokenData = { lastRequested: user.tokenData.lastRequested, expiresAt: user.tokenData.expiresAt, scope: user.tokenData.scope }
+  // Transform Niddabot Rank, if any.
+  if (user.niddabotRank) user.niddabotRank = await ranks.getRankById(user.niddabotRank.rankId)
+
+  return Object.assign(new NiddabotUser(), user)
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 const createUser = data => {
   if (!data) throw new Error('No User Data specified!')
@@ -99,22 +79,11 @@ const createUser = data => {
   })
 }
 
-
-
-
-
-
-
-
 const fetchUserInfo = async accessToken => {
   // First, try to fetch it using the provided token.
 
   // If that does not work, fetch it using the default Bot token.
 }
-
-
-
-
 
 const updateUser = (id, newData) => {
   return new Promise(async (resolve, reject) => {
@@ -125,14 +94,9 @@ const updateUser = (id, newData) => {
   })
 }
 
-
-
-
-
 const transformUser = user => {
   return {
     id: user._id,
-    discordInfo: user.discordInfo,
     discordId: user.discordId,
     tokenData: user.tokenData,
     niddabotStanding: user.niddabotStanding,
@@ -156,5 +120,6 @@ module.exports = {
   createUser: createUser,
   addUser: addUser,
   getUser: getUser,
-  findUser: findUser
+  findUser: findUser,
+  getNiddabotUser: getNiddabotUser
 }

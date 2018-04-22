@@ -9,6 +9,7 @@ const serverSchema = new mongoose.Schema({
   guildSettings: { // Guild settings.
     enabled: { type: Boolean, default: true }, // Whether Niddabot is active in this guild.
     devMode: { type: Boolean, default: false }, // Whether Niddabot is in development mode.
+    automaticRegistration: { type: Boolean, default: true }, // Whether Niddabot should automatically register new users when she detects them.
     commandsEnabled: { type: Boolean, default: true }, // Whether Niddabot is accepting commands.
     textResponseLevel: { type: String, enum: { values: ['full', 'limited', 'none'], message: 'Invalid response level.' }, default: 'full' },
     voiceResponseLevel: { type: String, enum: { values: ['full', 'limited', 'none'], message: 'Invalid response level.' }, default: 'full' },
@@ -16,7 +17,7 @@ const serverSchema = new mongoose.Schema({
     listenChannel: { type: String, default: 'all' } // The channel ID that Niddabot should listen to.
   },
   niddabotCommands: [ { type: String } ], // List of references to Niddabot Command _ids.
-  niddabotAccount: { type: String, required: [true, 'Servers require an owner.'] }, // The Niddabot Account that added this server.
+  niddabotAccounts: [{ type: String }], // The Niddabot Accounts that have edit permissions for this server.
   niddabotStatus: { }, // Optional Wildcard status which Niddabot may use to report her status in the guild.
   niddabotUsers: [{ type: String }], // An array of _id references to Niddabot User accounts.
   createdAt: { type: Date, required: true, default: Date.now },

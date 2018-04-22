@@ -8,17 +8,6 @@ const mongoose = require('mongoose')
 */
 const userSchema = new mongoose.Schema({
   discordId: { type: String, required: [true, 'Niddabot User Accounts require a Discord Id.'] },
-  discordInfo: { // Discord User Data
-    username: String, // Display name on discord. Donald
-    discriminator: String, // The Discord tag, i.e. #1234
-    avatar: String, // Discord avatar hash
-    bot: Boolean,
-    mfa_enabled: Boolean,
-    email: {
-      verified: Boolean,
-      address: String
-    }
-  },
   tokenData: { // User's auth token info.
     accessToken: String,
     tokenType: String,

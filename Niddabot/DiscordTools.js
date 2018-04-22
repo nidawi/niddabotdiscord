@@ -186,16 +186,14 @@ const requestUser = async (token, id) => {
   if (response && response.status === 200) {
     return {
       discordId: response.data.id,
-      discordInfo: {
-        username: response.data.username,
-        discriminator: response.data.discriminator,
-        avatar: response.data.avatar,
-        bot: response.data.bot,
-        mfa_enabled: response.data.mfa_enabled,
-        email: {
-          verified: response.data.verified,
-          address: response.data.email
-        }
+      username: response.data.username,
+      discriminator: response.data.discriminator,
+      avatar: response.data.avatar,
+      bot: response.data.bot,
+      mfa_enabled: response.data.mfa_enabled,
+      email: {
+        verified: response.data.verified,
+        address: response.data.email
       }
     }
   } else return undefined

@@ -2,7 +2,7 @@
 
 const emojiRegex = /.*<a?:\S+:\d+>.*/i // Matches Discord Emojis: <a?:EMOJI_NAME:EMOJI_ID>
 const emojiCleanRegex = /(.*<a?:)|(>.*)/gi
-const mentionRegex = /.*<@&?\d*>.*/gi // Matches Discord Mentions.
+const mentionRegex = /.*<@&?\d*>.*/i // Matches Discord Mentions.
 
 /**
  * Attempts to parse JSON.
@@ -13,10 +13,20 @@ const parseJSON = text => {
   try { return JSON.parse(text) } catch (err) { return text }
 }
 
+const isURL = text => {
+  // This is a mediocre attempt at verifying a URL
+  // It won't match all possible URLs, but I suppose it will match most common ones anyway
+  return new RegExp(
+    '^localhost:\\d{2,5}|' + // Local host
+    '^\\d{3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d|' + // Ipv4
+    '^((\\w|-)+\\.|(https?:\\/{2}))(\\w+)\\..+' // Normal domain
+  ).test(text)
+}
+
 /**
  * @typedef messageContent
  * @type {Object}
- * @property {Map} args
+ * @property {Map<string, *>} args
  */
 
 /**
@@ -26,10 +36,11 @@ const parseJSON = text => {
  */
 module.exports = msg => {
   const parts = msg.content.trim().split(' ').filter(Boolean)
-  const cleanedParts = parts.filter(a => { return (!a.startsWith('--') && !a.startsWith('@') && !emojiRegex.test(a) && !mentionRegex.test(a)) })
-  const args = parts.filter(a => a.startsWith('--'))
-  const emojis = parts.filter(a => emojiRegex.test(a)).map(a => { const cleanedEmojis = a.replace(emojiCleanRegex, '').split(':'); return { name: `:${cleanedEmojis[0]}:`, id: cleanedEmojis[1], animated: /.*<a:.*/.test(a) } })
-  const mentions = parts.filter(a => { return mentionRegex.test(a) }).map(a => { return a.replace(/\D/gi, '') })
+  const cleanedParts = parts.filter(a => { return (!a.startsWith('--') && !a.startsWith('@') && !emojiRegex.test(a) && !mentionRegex.test(a) && !isURL(a)) })
+  const args = Array.from(new Set(parts.filter(a => a.startsWith('--'))))
+  const emojis = Array.from(new Set(parts.filter(a => emojiRegex.test(a)))).map(a => { const cleanedEmojis = a.replace(emojiCleanRegex, '').split(':'); return { name: `:${cleanedEmojis[0]}:`, id: cleanedEmojis[1], animated: /.*<a:.*/.test(a) } })
+  const urls = Array.from(new Set(parts.filter(a => isURL(a))))
+  const mentions = Array.from(new Set(parts.filter(a => { return mentionRegex.test(a) }))).map(a => { return a.replace(/\D/gi, '') })
 
   msg.messageContent = {
     args: new Map(args.map(a => { const args = a.substring(2).split('='); return [args[0].toLowerCase(), parseJSON(args[1])] })),
@@ -39,8 +50,12 @@ module.exports = msg => {
     message: cleanedParts.join(' '),
     parts: cleanedParts,
     emojis: emojis,
+    urls: urls,
     mentions: mentions,
-    mentioned: (mentions.indexOf(msg.guild.me.id) > -1)
+    mentioned: (mentions.indexOf(msg.guild.me.id) > -1),
+    toString () {
+      return JSON.stringify(this)
+    }
   }
 }
 

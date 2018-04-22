@@ -70,9 +70,19 @@ const getRanks = async (transform = true) => {
 /**
  * Gets a rank with the specified name. Names are unique.
  * @param {*} name Name of the rank.
+ * @param {*} transform d
  */
 const getRank = async (name, transform = true) => {
   const rank = await Rank.findOne({ name: sanitize(name) })
+  return (transform) ? transformRank(rank) : rank
+}
+/**
+ * d
+ * @param {*} id d
+ * @param {*} transform d
+ */
+const getRankById = async (id, transform = true) => {
+  const rank = await Rank.findById(sanitize(id))
   return (transform) ? transformRank(rank) : rank
 }
 const transformRank = rank => {
@@ -103,8 +113,11 @@ const verifyDatabase = async (log = false) => {
   }
 }
 
-module.exports.createRank = createRank
-module.exports.createDefault = createDefault
-module.exports.getRanks = getRanks
-module.exports.getRank = getRank
-module.exports.verifyDatabase = verifyDatabase
+module.exports = {
+  createRank: createRank,
+  createDefault: createDefault,
+  getRanks: getRanks,
+  getRank: getRank,
+  getRankById: getRankById,
+  verifyDatabase: verifyDatabase
+}

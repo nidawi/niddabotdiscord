@@ -23,8 +23,13 @@ const responses = [
   'Very doubtful'
 ]
 
-module.exports = (msg, next) => {
-  if (msg.messageContent.parts.length < 2 || msg.messageContent.message.indexOf('?') === -1) return next()
+/**
+ * Allows Niddabot to use the magic 8ball feature.
+ * @param {*} msg Discordjs message object.
+ * @param {*} next Chain Next-function.
+ */
+module.exports = (route, msg, next) => {
+  if (route.parts.length < 2 || route.message.indexOf('?') === -1) return next()
   msg.reply(`${responses[Math.floor(Math.random() * responses.length)].toLowerCase()}.`)
   // next()
 }
