@@ -34,11 +34,12 @@ class NiddabotUser {
     return (this.tokenData) ? `Expires in ${Math.round((this.tokenData.expiresAt - new Date()) / 1000 / 60 / 60 / 24)} days.` : `none available.`
   }
   toString (debug) {
+    if (!this.discordInfo) return undefined
     return (debug) ? `${JSON.stringify(this)}` : `Name: ${this.name}\n` +
     `Id: ${this.discordId}\n` +
     `Registered: ${this.isRegistered()}\n` +
     `Rank: ${this.getRank()}\n` +
-    (this.isRegistered()) ? `Token: ${this.getToken()}` : ''
+    ((this.isRegistered()) ? `Token: ${this.getToken()}` : '')
   }
 }
 

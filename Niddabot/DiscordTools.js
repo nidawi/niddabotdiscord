@@ -117,6 +117,11 @@ const discordRequest = async (url, options) => {
     return undefined
   }
 }
+/**
+ * d
+ * @param {*} data d
+ * @returns {TokenData}
+ */
 const parseToken = data => {
   return {
     accessToken: data.access_token,
@@ -127,6 +132,11 @@ const parseToken = data => {
     scope: data.scope.split(' ')
   }
 }
+/**
+ * d
+ * @param {string} code d
+ * @returns {TokenData}
+ */
 const requestToken = async code => {
   if (!code) throw new Error('No code provided.')
   // Fill the request with data appropriate to a Token Request.
@@ -142,47 +152,79 @@ const requestToken = async code => {
     return undefined
   }
 }
-const refreshToken = () => {
+/**
+ * d
+ * @param {string} refreshToken The Refresh Token.
+ * @returns {TokenData}
+ */
+const refreshToken = async refreshToken => {
+  if (!refreshToken) throw new Error('No refresh token provided.')
+  const requestData = {
+    method: 'POST',
+    formData: createRequestBody(refreshToken, true)
+  }
 
-
-
+  try {
+    const response = await discordRequest(discordURLs.tokenURL, requestData)
+    return parseToken(response.data)
+  } catch (err) {
+    return undefined
+  }
 }
 
 
 
 
 
+/**
+ * @typedef TokenData
+ * @type {Object}
+ * @property {string} accessToken
+ * @property {string} tokenType
+ * @property {Date} lastRequested
+ * @property {Date} expiresAt
+ * @property {string} refreshToken
+ * @property {string[]} scope
+ */
+
+/**
+ * @typedef UserDataEmail
+ * @type {Object}
+ * @property {boolean} verified
+ * @property {string} address
+ */
+
+/**
+ * @typedef UserData
+ * @type {Object}
+ * @property {string} username
+ * @property {string} discriminator
+ * @property {string} avatar
+ * @property {boolean} bot
+ * @property {boolean} mfa_enabled
+ * @property {UserDataEmail} email
+ */
 
 
 
 
-/*
-          username: String, // Display name on discord. Donald
-          discriminator: String, // The Discord tag, i.e. #1234
-          avatar: String, // Discord avatar hash
-          bot: Boolean,
-          mfa_enabled: Boolean,
-          email: {
-            verified: Boolean,
-            address: String
-          }
-*/
 
 
 
-
-
-
-
-
-const requestUser = async (token, id) => {
-  if (!token && !id) return undefined
+/**
+ * d
+ * @param {string} accessToken d
+ * @param {string} discordId d
+ * @returns {UserData}
+ */
+const requestUser = async (accessToken, discordId) => {
+  if (!accessToken && !discordId) return undefined
   const requestOptions = {
     headers: {
-      'Authorization': (token) ? createAuthorizationHeader('Bearer', token) : createAuthorizationHeader()
+      'Authorization': (accessToken) ? createAuthorizationHeader('Bearer', accessToken) : createAuthorizationHeader()
     }
   }
-  const response = await discordRequest((token) ? 'users/@me' : `users/${id}`, requestOptions)
+  const response = await discordRequest((accessToken) ? 'users/@me' : `users/${discordId}`, requestOptions)
   if (response && response.status === 200) {
     return {
       discordId: response.data.id,
@@ -198,10 +240,10 @@ const requestUser = async (token, id) => {
     }
   } else return undefined
 }
-
-
-
-
+/**
+ * d
+ * @returns {UserData}
+ */
 const requestSelf = async () => {
   // Request information about self in parallel for speed purposes.
   const appData = await Promise.all([
@@ -214,11 +256,17 @@ const requestSelf = async () => {
   }
 }
 
-
-
-
-
-
+/**
+ * d
+ * @param {*} guildId d
+ */
+const requestGuild = async guildId => {
+  if (!guildId) return undefined
+  const response = await discordRequest(`guilds/${guildId}`)
+  if (response && response.status === 200) {
+    return response.data
+  } else return undefined
+}
 
 module.exports = {
   getAuthenticationString: generateAuthenticationString,
@@ -227,5 +275,7 @@ module.exports = {
   discordRequest: discordRequest,
   requestSelf: requestSelf,
   requestToken: requestToken,
-  requestUser: requestUser
+  refreshToken: refreshToken,
+  requestUser: requestUser,
+  requestGuild: requestGuild
 }

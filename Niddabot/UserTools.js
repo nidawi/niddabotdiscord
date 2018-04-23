@@ -1,7 +1,7 @@
 // Tools for Niddabot User Accounts.
 
 const User = require('../models/Schemas').user
-const NiddabotUser = require('./NiddabotUser')
+const NiddabotUser = require('./structs/NiddabotUser')
 const discord = require('./DiscordTools')
 const ranks = require('./RankTools')
 const sanitize = require('mongo-sanitize')

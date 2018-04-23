@@ -13,8 +13,17 @@ const serverSchema = new mongoose.Schema({
     commandsEnabled: { type: Boolean, default: true }, // Whether Niddabot is accepting commands.
     textResponseLevel: { type: String, enum: { values: ['full', 'limited', 'none'], message: 'Invalid response level.' }, default: 'full' },
     voiceResponseLevel: { type: String, enum: { values: ['full', 'limited', 'none'], message: 'Invalid response level.' }, default: 'full' },
-    respondChannel: { type: String, default: 'any' }, // The channel ID that Niddabot should respond in.
-    listenChannel: { type: String, default: 'all' } // The channel ID that Niddabot should listen to.
+    respondChannel: { type: String, default: '*' }, // The channel ID that Niddabot should respond in.
+    listenChannel: { type: String, default: '*' } // The channel ID that Niddabot should listen to.
+  },
+  niddabotNotifications: {
+    enabled: { type: Boolean, default: true },
+    interval: { type: Number, default: (1000 * 60 * 10) },
+    notifications: [{
+      name: String,
+      text: String,
+      channel: { type: String, default: '*' }
+    }]
   },
   niddabotCommands: [ { type: String } ], // List of references to Niddabot Command _ids.
   niddabotAccounts: [{ type: String }], // The Niddabot Accounts that have edit permissions for this server.

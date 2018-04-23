@@ -1,7 +1,14 @@
 // Super User Functionality.
+const Router = require('../components/Router')
 
-module.exports = async (route, msg, next) => {
+const router = new Router()
+
+router.use('*', async (route, msg, next) => {
   if (!(await msg.niddabot.user).canPerform(1000)) return next(new Error('Access denied.'))
+  else return next()
+})
+router.use('', (route, msg, next) => {
   msg.reply('sudo!')
-  next()
-}
+})
+
+module.exports = router

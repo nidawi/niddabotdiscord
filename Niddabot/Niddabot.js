@@ -4,6 +4,7 @@ const Router = require('./components/Router')
 
 const parseMessage = require('./system/messageParser')
 const applyBotData = require('./system/niddabotData')
+const dataTransformation = require('./system/dataTransforms')
 
 const discordClient = new Discord.Client()
 
@@ -18,15 +19,13 @@ class Niddabot {
     const niddabotModules = [
       // Modules used by Niddabot.
       { path: 'sudo', module: require('./modules/sudo') }, // Super User module
-      { path: 'test', module: require('./modules/testing') }, // Test module
+      { path: 'test', module: require('./modules/testing'), options: { onlyMentioned: true } }, // Test module
       { path: 'route', module: require('./modules/routertest') }, // Router test
 
-      { path: '*', module: (route, msg, next) => { msg.reply('Triggered by being mentioned.'); next() }, options: { onlyMentioned: true } },
+      // { path: '*', module: (route, msg, next) => { msg.reply('Triggered by being mentioned.'); next() }, options: { onlyMentioned: true } },
 
       // Entertainment
-      { path: '!8ball', module: require('./modules/magic8ball') },
-
-      { path: '*', module: (route, msg, next) => { if (msg.messageContent.mentioned) msg.reply('idk') } } // Grabs everything
+      { path: '!8ball', module: require('./modules/magic8ball') }
     ]
     niddabotModules.forEach(a => { niddabotRouter.use(a.path, a.module, a.options) })
 
@@ -49,30 +48,34 @@ class Niddabot {
       discordClient.on('guildMemberAdd', async member => {})
       discordClient.on('channelCreate', channel => { })
       discordClient.on('message', async msg => {
-        console.time(`"${msg.content}" msg`)
-        // This is the main message handling, provided to us by Discord.js.
-        // Each time this event occurs, a message is coming in.
-        // Ignore messages that are by ourselves. We don't need to waste processing power on those.
-        if (msg.author.id === discordClient.user.id) return
-        if (msg.channel.type !== 'text') return msg.reply('I do currently not support this method of communication. Apologies.')
+        try {
+          console.time(`"${msg.content}" msg`)
+          // This is the main message handling, provided to us by Discord.js.
+          // Each time this event occurs, a message is coming in.
+          // Ignore messages that are by ourselves. We don't need to waste processing power on those.
+          if (msg.author.id === discordClient.user.id) return
+          if (msg.channel.type !== 'text') return msg.reply('I do currently not support this method of communication. Apologies.')
 
-        // Do pre-processing that doesn't belong in the middleware chain.
-        console.time(`"${msg.content}" preprocess`)
-        await preProcess(msg)
-        console.timeEnd(`"${msg.content}" preprocess`)
+          // Do pre-processing that doesn't belong in the middleware chain.
+          console.time(`"${msg.content}" preprocess`)
+          await preProcess(msg)
+          console.timeEnd(`"${msg.content}" preprocess`)
 
-        // Send the message down the middleware chain and await completion.
-        // This will return regardless of whether the message was caught in the chain or if it passes all the way through it.
-        console.time(`"${msg.content}" routing`)
-        await niddabotRouter._route(msg)
-        console.timeEnd(`"${msg.content}" routing`)
+          // Send the message down the middleware chain and await completion.
+          // This will return regardless of whether the message was caught in the chain or if it passes all the way through it.
+          console.time(`"${msg.content}" routing`)
+          await niddabotRouter._route(msg)
+          console.timeEnd(`"${msg.content}" routing`)
 
-        // Do post-processing that doesn't belong in the middleware chain.
-        console.time(`"${msg.content}" postprocess`)
-        await postProcess(msg)
-        console.timeEnd(`"${msg.content}" postprocess`)
+          // Do post-processing that doesn't belong in the middleware chain.
+          console.time(`"${msg.content}" postprocess`)
+          await postProcess(msg)
+          console.timeEnd(`"${msg.content}" postprocess`)
 
-        console.timeEnd(`"${msg.content}" msg`)
+          console.timeEnd(`"${msg.content}" msg`)
+        } catch (err) {
+          console.log(err.message)
+        }
       })
 
       await discordClient.login(process.env.NIDDABOT_TOKEN)
@@ -98,6 +101,7 @@ class Niddabot {
         // Apply mandatory transformations
         parseMessage(msg)
         await applyBotData(msg)
+        await dataTransformation(msg)
 
         // Add statistics
         msg.statistics.preProcessDoneAt = new Date()
@@ -113,7 +117,14 @@ class Niddabot {
         if (msg.messageContent.hasArgument('pos')) msg.reply(`POS => member: ${msg.member}, guild: ${msg.guild}, channel: ${msg.channel}, user: ${msg.user}`)
         if (msg.messageContent.hasArgument('modules')) msg.reply(`MODULES => ${JSON.stringify(niddabotRouter.getModuleList())}`)
         if (msg.messageContent.hasArgument('session')) msg.reply(`SESSION => ${JSON.stringify(niddabotSession)}`)
-        if (msg.messageContent.hasArgument('me')) msg.reply(`YOU => \n${(await msg.niddabot.user).toString(msg.messageContent.getArgument('debug') === true)}`)
+        if (msg.messageContent.hasArgument('server')) {
+          const answer = (await msg.niddabot.server).toString(msg.messageContent.getArgument('debug') === true)
+          if (answer) msg.reply(`SERVER => \n${answer}`)
+        }
+        if (msg.messageContent.hasArgument('me')) {
+          const answer = (await msg.niddabot.user).toString(msg.messageContent.getArgument('debug') === true)
+          if (answer) msg.reply(`YOU => \n${answer}`)
+        }
         // Time has to be last.
         if (msg.messageContent.hasArgument('time')) msg.reply(`TIME => total: ${(new Date() - msg.statistics.initiatedAt)} ms, pre-process: ${msg.statistics.preProcessDoneAt - msg.statistics.initiatedAt} ms, routing: ${(msg.statistics.postProcessStartAt - msg.statistics.preProcessDoneAt)} ms, post-process: ${new Date() - msg.statistics.postProcessStartAt} ms`)
       }

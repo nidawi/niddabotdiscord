@@ -10,9 +10,19 @@ const mentionRegex = /.*<@&?\d*>.*/i // Matches Discord Mentions.
  * @returns {string}
  */
 const parseJSON = text => {
-  try { return JSON.parse(text) } catch (err) { return text }
+  try {
+    // If it's a number and it's too large/small for Javascript's Number (most likely a discordId), it will simply remain a string.
+    const value = JSON.parse(text)
+    if (typeof value === 'number' && (value > Number.MAX_SAFE_INTEGER || value < Number.MIN_SAFE_INTEGER)) return text
+    else return value
+  } catch (err) { return text }
 }
 
+/**
+ * Checks if the provided string is a URL. Short URLs, i.e. "google.com", will not match.
+ * @param {string} text String to check if it's a url.
+ * @returns {boolean}
+ */
 const isURL = text => {
   // This is a mediocre attempt at verifying a URL
   // It won't match all possible URLs, but I suppose it will match most common ones anyway
@@ -44,7 +54,7 @@ module.exports = msg => {
 
   msg.messageContent = {
     args: new Map(args.map(a => { const args = a.substring(2).split('='); return [args[0].toLowerCase(), parseJSON(args[1])] })),
-    arguments: args.map(a => { const args = a.substring(2).split('='); return { key: args[0].toLowerCase(), value: parseJSON(args[1]) } }),
+    // arguments: args.map(a => { const args = a.substring(2).split('='); return { key: args[0].toLowerCase(), value: parseJSON(args[1]) } }),
     hasArgument (arg) { return this.args.has(arg) },
     getArgument (arg) { return this.args.get(arg) },
     message: cleanedParts.join(' '),
@@ -53,6 +63,7 @@ module.exports = msg => {
     urls: urls,
     mentions: mentions,
     mentioned: (mentions.indexOf(msg.guild.me.id) > -1),
+    permissions: (msg.guild) ? msg.guild.me.highestRole.permissions : undefined,
     toString () {
       return JSON.stringify(this)
     }

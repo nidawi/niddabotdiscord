@@ -29,7 +29,7 @@ const responses = [
  * @param {*} next Chain Next-function.
  */
 module.exports = (route, msg, next) => {
-  if (route.parts.length < 2 || route.message.indexOf('?') === -1) return next()
+  if (route.parts.length < 1 || route.message.indexOf('?') === -1) return next()
   msg.reply(`${responses[Math.floor(Math.random() * responses.length)].toLowerCase()}.`)
   // next()
 }

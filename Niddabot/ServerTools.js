@@ -1,10 +1,12 @@
 // Tools for Niddabot Servers.
 
 const Server = require('../models/Schemas').server
+const NiddabotServer = require('./structs/NiddabotServer')
+const Discord = require('./DiscordTools')
 const sanitize = require('mongo-sanitize')
 
 /**
- * @typedef NiddabotServer
+ * @typedef NiddabotServerObject
  * @type {object}
  * @property {string} id Id of the Niddabot Server.
  * @property {string} guildId
@@ -23,7 +25,7 @@ const sanitize = require('mongo-sanitize')
  * @param {string} guildId The guildId of the Discord Guild.
  * @param {string} accountId The Id of the Niddabot account.
  * @param {boolean} [transform=true] Whether the returned server should be transformed or returned as a Mongoose query document. Defaults to true.
- * @returns {Promise<NiddabotServer>}
+ * @returns {Promise<NiddabotServerObject>}
  */
 const addServer = async (guildId, accountId, transform = true) => {
   try {
@@ -45,7 +47,7 @@ const addServer = async (guildId, accountId, transform = true) => {
  * @param {string} serverId The Id of the Niddabot Server.
  * @param {string} guildId The guildId of the Discord Guild.
  * @param {boolean} [transform=true] Whether the returned server should be transformed or returned as a Mongoose query document. Defaults to true.
- * @returns {Promise<NiddabotServer>}
+ * @returns {Promise<NiddabotServerObject>}
  */
 const fetchServer = async (serverId, guildId, transform = true) => {
   if (!serverId && !guildId) return undefined // If no Id is provided, return undefined.
@@ -54,12 +56,29 @@ const fetchServer = async (serverId, guildId, transform = true) => {
   return (transform) ? transformServer(server) : server
 }
 
+/**
+ * d
+ * @param {*} id d
+ * @param {*} guildId d
+ */
+const getNiddabotServer = async (id, guildId) => {
+  const server = await fetchServer(id, guildId)
+
+  server.guildInfo = await Discord.requestGuild(guildId || server.guildId)
+  if (server.guildInfo) {
+    server.owner = await Discord.requestUser(undefined, server.guildInfo.owner_id)
+  }
+
+  return Object.assign(new NiddabotServer(), server)
+}
+
 const transformServer = data => {
   return {
     id: data._id,
     guildId: data.guildId,
     guildData: data.guildData,
     guildSettings: data.guildSettings,
+    niddabotNotifications: data.niddabotNotifications,
     niddabotCommands: data.niddabotCommands,
     niddabotAccounts: data.niddabotAccounts,
     niddabotStatus: data.niddabotStatus,
@@ -71,5 +90,6 @@ const transformServer = data => {
 
 module.exports = {
   addServer: addServer,
-  fetchServer: fetchServer
+  fetchServer: fetchServer,
+  getNiddabotServer: getNiddabotServer
 }
