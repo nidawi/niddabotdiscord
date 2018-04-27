@@ -10,5 +10,9 @@ router.use('*', async (route, msg, next) => {
 router.use('', (route, msg, next) => {
   msg.reply('sudo!')
 })
+router.use('exit', async (route, msg, next) => {
+  await msg.reply('shutdown command acknowledged.')
+  await msg.self.exit(true)
+})
 
 module.exports = router

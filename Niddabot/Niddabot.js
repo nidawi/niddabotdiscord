@@ -18,6 +18,8 @@ class Niddabot {
     }
     const niddabotModules = [
       // Modules used by Niddabot.
+      { path: '*', module: require('./middleware/niddabot-session'), options: { guildOnly: true } },
+
       { path: 'sudo', module: require('./modules/sudo') }, // Super User module
       { path: 'test', module: require('./modules/testing'), options: { onlyMentioned: true } }, // Test module
       { path: 'route', module: require('./modules/routertest') }, // Router test
@@ -25,6 +27,7 @@ class Niddabot {
       // { path: '*', module: (route, msg, next) => { msg.reply('Triggered by being mentioned.'); next() }, options: { onlyMentioned: true } },
 
       // Entertainment
+      { path: '!music', module: require('./modules/niddabot-music') },
       { path: '!8ball', module: require('./modules/magic8ball') }
     ]
     niddabotModules.forEach(a => { niddabotRouter.use(a.path, a.module, a.options) })
@@ -53,13 +56,13 @@ class Niddabot {
           // This is the main message handling, provided to us by Discord.js.
           // Each time this event occurs, a message is coming in.
           // Ignore messages that are by ourselves. We don't need to waste processing power on those.
-          if (msg.author.id === discordClient.user.id) return
-          if (msg.channel.type !== 'text') return msg.reply('I do currently not support this method of communication. Apologies.')
+          if (msg.author.id === discordClient.user.id || ['dm', 'text'].indexOf(msg.channel.type) === -1) return
 
           // Do pre-processing that doesn't belong in the middleware chain.
           console.time(`"${msg.content}" preprocess`)
           await preProcess(msg)
           console.timeEnd(`"${msg.content}" preprocess`)
+          // msg.guild.me.voiceChannel.connection.playBroadcast()
 
           // Send the message down the middleware chain and await completion.
           // This will return regardless of whether the message was caught in the chain or if it passes all the way through it.
@@ -80,32 +83,53 @@ class Niddabot {
 
       await discordClient.login(process.env.NIDDABOT_TOKEN)
     }
-    this.disconnect = (exit = true) => {
-      discordClient.destroy()
+    this.disconnect = async (exit = true) => {
+      await discordClient.destroy()
       if (exit) process.exit(1)
+    }
+
+    /**
+     * @typedef NiddabotSelf
+     * @type {Object}
+     * @property {Object} application
+     * @property {Object} user
+     * @property {Discord.Client} client
+     * @property {Method} exit
+     */
+
+    /**
+     * @returns {NiddabotSelf}
+     */
+    const createSelf = () => {
+      return {
+        application: niddabotSession.botData.applicationData,
+        user: niddabotSession.botData.accountData,
+        client: discordClient,
+        exit: this.disconnect
+      }
     }
 
     const preProcess = msg => {
       return new Promise(async (resolve, reject) => {
         // Pre-process means adding mostly statistical or mandatory transformations for the data to be properly processed by middleware.
         // Add information about Niddabot herself.
-        msg.self = {
-          application: niddabotSession.botData.applicationData,
-          user: niddabotSession.botData.accountData
-        }
+        msg.self = createSelf()
+
         // Add statistics.
         msg.statistics = {
           initiatedAt: new Date()
         }
 
         // Apply mandatory transformations
-        parseMessage(msg)
-        await applyBotData(msg)
-        await dataTransformation(msg)
+        try {
+          parseMessage(msg)
+          await applyBotData(msg)
+          await dataTransformation(msg)
 
-        // Add statistics
-        msg.statistics.preProcessDoneAt = new Date()
-        resolve()
+          // Add statistics
+          msg.statistics.preProcessDoneAt = new Date()
+          resolve()
+        } catch (err) { reject(err) }
       })
     }
     const postProcess = async msg => {
@@ -116,7 +140,7 @@ class Niddabot {
         if (msg.messageContent.hasArgument('echo')) msg.reply(`ECHO => ${msg.messageContent.toString()}`) // IF the user requests an echo.
         if (msg.messageContent.hasArgument('pos')) msg.reply(`POS => member: ${msg.member}, guild: ${msg.guild}, channel: ${msg.channel}, user: ${msg.user}`)
         if (msg.messageContent.hasArgument('modules')) msg.reply(`MODULES => ${JSON.stringify(niddabotRouter.getModuleList())}`)
-        if (msg.messageContent.hasArgument('session')) msg.reply(`SESSION => ${JSON.stringify(niddabotSession)}`)
+        if (msg.messageContent.hasArgument('session')) msg.reply(`SESSION => ${JSON.stringify(msg.session)}`)
         if (msg.messageContent.hasArgument('server')) {
           const answer = (await msg.niddabot.server).toString(msg.messageContent.getArgument('debug') === true)
           if (answer) msg.reply(`SERVER => \n${answer}`)

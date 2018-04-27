@@ -42,6 +42,7 @@ const createDefault = async log => {
       createRank({ name: 'Moderator', privilege: 500, canBeEdited: false, canBeDeleted: false, requires2FA: false, requiresAuthenticated: true }), // Global Niddabot Moderator
       createRank({ name: 'Server Owner', privilege: 600, canBeEdited: true, canBeDeleted: false, requires2FA: false, requiresAuthenticated: true }), // Server Owner / Bot "Owner"
       createRank({ name: 'Server Admin', privilege: 200, canBeEdited: true, canBeDeleted: true }), // Server Admin/Moderator
+      createRank({ name: 'Server OP', privilege: 100, canBeEdited: true, canBeDeleted: true }), // Server Operator
       createRank({ name: 'VIP', privilege: 0, canBeEdited: true, canBeDeleted: true }), // Global Niddabot VIP
       createRank({ name: 'User', privilege: 0, canBeDeleted: false }) // Normal user
     ])

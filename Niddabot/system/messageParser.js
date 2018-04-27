@@ -34,6 +34,18 @@ const isURL = text => {
 }
 
 /**
+ * Converts a discord Channel Type into a more reader-friendly string.
+ * @param {string} text Text to convert.
+ */
+const getType = text => {
+  switch (text) {
+    case 'dm': return 'private'
+    case 'text': return 'guild'
+    default: return 'other'
+  }
+}
+
+/**
  * @typedef messageContent
  * @type {Object}
  * @property {Map<string, *>} args
@@ -41,7 +53,7 @@ const isURL = text => {
 
 /**
  * dd
- * @param {*} msg d
+ * @param {*} msg DiscordJS message.
  * @returns {messageContent}
  */
 module.exports = msg => {
@@ -53,7 +65,7 @@ module.exports = msg => {
   const mentions = Array.from(new Set(parts.filter(a => { return mentionRegex.test(a) }))).map(a => { return a.replace(/\D/gi, '') })
 
   msg.messageContent = {
-    args: new Map(args.map(a => { const args = a.substring(2).split('='); return [args[0].toLowerCase(), parseJSON(args[1])] })),
+    args: new Map(args.map(a => { const breakPoint = a.indexOf('='); return (breakPoint !== -1) ? [a.substring(2, breakPoint).toLowerCase(), parseJSON(a.substring(breakPoint + 1))] : [a.substring(2), undefined] })),
     // arguments: args.map(a => { const args = a.substring(2).split('='); return { key: args[0].toLowerCase(), value: parseJSON(args[1]) } }),
     hasArgument (arg) { return this.args.has(arg) },
     getArgument (arg) { return this.args.get(arg) },
@@ -61,11 +73,14 @@ module.exports = msg => {
     parts: cleanedParts,
     emojis: emojis,
     urls: urls,
+    type: getType(msg.channel.type),
     mentions: mentions,
-    mentioned: (mentions.indexOf(msg.guild.me.id) > -1),
+    mentioned: (mentions.indexOf(msg.self.user.id) > -1),
     permissions: (msg.guild) ? msg.guild.me.highestRole.permissions : undefined,
     toString () {
-      return JSON.stringify(this)
+      return `\n` +
+      `Arguments: ${Array.from(this.args.entries())}\n` +
+      ``
     }
   }
 }

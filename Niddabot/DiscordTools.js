@@ -1,5 +1,8 @@
 const request = require('request-promise-native')
 
+const Collection = require('./components/Collection')
+const DiscordEmoji = require('./structs/DiscordEmoji')
+
 const discordURLs = {
   authURL: 'https://discordapp.com/api/oauth2/authorize',
   tokenURL: 'https://discordapp.com/api/oauth2/token',
@@ -264,8 +267,70 @@ const requestGuild = async guildId => {
   if (!guildId) return undefined
   const response = await discordRequest(`guilds/${guildId}`)
   if (response && response.status === 200) {
-    return response.data
+    return Object.assign({}, response.data, {
+      channels: await requestChannels(guildId)
+    })
   } else return undefined
+}
+
+/**
+ * @typedef discordChannel
+ * @type {Object}
+ * @property {string} guildId
+ * @property {string} name
+ * @property {string} topic
+ * @property {string} parentId
+ * @property {boolean} nsfw
+ * @property {number} position
+ * @property {number} type
+ * @property {string} id
+ * @property {number} bitrate
+ * @property {number} userLimit
+ * @property {string[]} permissionOverwrites
+ */
+
+const convertChannelType = type => {
+  switch (type) {
+    case 0: return 'text'
+    case 1: return 'private'
+    case 2: return 'voice'
+    case 3: return 'group'
+    case 4: return 'category'
+    default: return 'unknown'
+  }
+}
+
+/**
+ * d
+ * @param {string} guildId d
+ * @returns {discordChannel[]}
+ */
+const requestChannels = async guildId => {
+  if (!guildId) return undefined
+  const response = await discordRequest(`guilds/${guildId}/channels`)
+  if (response && response.status === 200) {
+    return new Collection(response.data
+      .filter(a => a.type !== 4)
+      .map(a => {
+        return [a.id, {
+          guildId: a.guild_id,
+          name: a.name,
+          topic: a.topic,
+          parentId: a.parent_id,
+          nsfw: a.nsfw,
+          position: a.position,
+          type: convertChannelType(a.type),
+          id: a.id,
+          bitrate: a.bitrate,
+          userLimit: a.user_limit,
+          permissionOverwrites: a.permission_overwrites
+        }]
+      }))
+  } else return undefined
+}
+
+const requestMessages = async (channelId, options = undefined) => {
+  const queryParams = Object.assign({ around: undefined, before: undefined, after: undefined, limit: 100 }, options)
 }
 
 module.exports = {
@@ -277,5 +342,6 @@ module.exports = {
   requestToken: requestToken,
   refreshToken: refreshToken,
   requestUser: requestUser,
-  requestGuild: requestGuild
+  requestGuild: requestGuild,
+  requestChannels: requestChannels
 }

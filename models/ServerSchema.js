@@ -27,6 +27,10 @@ const serverSchema = new mongoose.Schema({
   },
   niddabotCommands: [ { type: String } ], // List of references to Niddabot Command _ids.
   niddabotAccounts: [{ type: String }], // The Niddabot Accounts that have edit permissions for this server.
+  niddabotRanks: [ { // Niddabot Server-specific User Ranks. Niddabot will always prioritize the highest rank.
+    userId: String, // User Id
+    rankId: String // Rank Id
+  } ],
   niddabotStatus: { }, // Optional Wildcard status which Niddabot may use to report her status in the guild.
   niddabotUsers: [{ type: String }], // An array of _id references to Niddabot User accounts.
   createdAt: { type: Date, required: true, default: Date.now },
