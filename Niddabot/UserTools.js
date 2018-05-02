@@ -21,6 +21,18 @@ const addUser = async (discordId, niddabotAccountId = undefined, niddabotRank = 
   await user.save()
   return (transform) ? transformUser(user) : user
 }
+const updateUserToken = async (id, transform = true) => {
+  const user = await findUser(id, false) || await getUser(id, false)
+  if (user) {
+    const tokenData = await discord.refreshToken(user.tokenData.refreshToken)
+    if (tokenData) {
+      user.tokenData = tokenData
+
+      user.save()
+      return (transform) ? transformUser(user) : user
+    }
+  }
+}
 /**
  * Finds a Niddabot User Account with the specified Discord Id. Returns undefined if nothing was found.
  * @param {string} discordId The Discord User Id.
@@ -119,6 +131,7 @@ module.exports = {
   verifyDatabase: verifyDatabase,
   createUser: createUser,
   addUser: addUser,
+  updateUserToken: updateUserToken,
   getUser: getUser,
   findUser: findUser,
   getNiddabotUser: getNiddabotUser

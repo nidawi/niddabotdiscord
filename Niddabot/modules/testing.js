@@ -7,6 +7,14 @@ router.use('*', async (route, msg, next) => {
   if (!(await msg.niddabot.user).canPerform(999)) return next(new Error('access denied.'))
   else return next()
 })
+router.use('*', async (route, msg, next) => {
+  route.hello = 25
+  next()
+})
+router.use('*', async (route, msg, next) => {
+  console.log(route.hello)
+  next()
+})
 router.use('', (route, msg, next) => {
   msg.reply(`This is my testing module. Run a test by typing "test" followed by the test identifier.`)
 })

@@ -14,21 +14,31 @@ class Niddabot {
     const niddabotSession = {
       // Session data for Niddabot.
       startedAt: new Date(),
-      botData: undefined
+      botData: undefined,
+      devMode: true
     }
     const niddabotModules = [
       // Modules used by Niddabot.
-      { path: '*', module: require('./middleware/niddabot-session'), options: { guildOnly: true } },
+      { path: '*', module: require('./middleware/niddabot-session') },
+
+      { path: 'mentioned', module: (route, msg, next) => { msg.reply('mentioned') }, options: { trigger: 'mentioned' } },
+      { path: 'command', module: (route, msg, next) => { msg.reply('command') }, options: { trigger: 'command' } },
+      { path: 'either', module: (route, msg, next) => { msg.reply('either') }, options: { trigger: 'either' } },
+      { path: 'any', module: (route, msg, next) => { msg.reply('any') }, options: { trigger: 'any' } },
 
       { path: 'sudo', module: require('./modules/sudo') }, // Super User module
-      { path: 'test', module: require('./modules/testing'), options: { onlyMentioned: true } }, // Test module
+      { path: 'test', module: require('./modules/testing') }, // Test module
       { path: 'route', module: require('./modules/routertest') }, // Router test
+
+      // Management
+      { path: 'me', module: require('./modules/me') },
 
       // { path: '*', module: (route, msg, next) => { msg.reply('Triggered by being mentioned.'); next() }, options: { onlyMentioned: true } },
 
       // Entertainment
-      { path: '!music', module: require('./modules/niddabot-music') },
-      { path: '!8ball', module: require('./modules/magic8ball') }
+      { path: 'music', module: require('./modules/entertainment/niddabot-music') },
+      { path: '8ball', module: require('./modules/entertainment/magic8ball') },
+      { path: 'roll', module: require('./modules/entertainment/dice') }
     ]
     niddabotModules.forEach(a => { niddabotRouter.use(a.path, a.module, a.options) })
 
@@ -102,9 +112,10 @@ class Niddabot {
      */
     const createSelf = () => {
       return {
+        startedAt: niddabotSession.startedAt,
+        devMode: niddabotSession.devMode,
         application: niddabotSession.botData.applicationData,
         user: niddabotSession.botData.accountData,
-        client: discordClient,
         exit: this.disconnect
       }
     }
@@ -145,10 +156,7 @@ class Niddabot {
           const answer = (await msg.niddabot.server).toString(msg.messageContent.getArgument('debug') === true)
           if (answer) msg.reply(`SERVER => \n${answer}`)
         }
-        if (msg.messageContent.hasArgument('me')) {
-          const answer = (await msg.niddabot.user).toString(msg.messageContent.getArgument('debug') === true)
-          if (answer) msg.reply(`YOU => \n${answer}`)
-        }
+        if (msg.messageContent.hasArgument('self')) msg.reply(`SELF => ${JSON.stringify(msg.self)}`)
         // Time has to be last.
         if (msg.messageContent.hasArgument('time')) msg.reply(`TIME => total: ${(new Date() - msg.statistics.initiatedAt)} ms, pre-process: ${msg.statistics.preProcessDoneAt - msg.statistics.initiatedAt} ms, routing: ${(msg.statistics.postProcessStartAt - msg.statistics.preProcessDoneAt)} ms, post-process: ${new Date() - msg.statistics.postProcessStartAt} ms`)
       }

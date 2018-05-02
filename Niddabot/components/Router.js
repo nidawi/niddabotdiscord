@@ -13,6 +13,9 @@ class Router {
    * @memberof Router
    */
   constructor () {
+    /**
+     * @type {moduleData[]}
+     */
     this._modules = []
   }
   _process (modules, route, data, index = 0) {
@@ -54,34 +57,54 @@ class Router {
     // Create a customized instance of the messageContent object to use for internal routers.
     // This provides the routes with modified paths where their own route has been removed.
     if (modulePath === '*') return data
+    const pathRegexp = new RegExp(`${(data.routed) ? '' : '!?'}${modulePath}\\s?`, 'i')
     return Object.assign({}, data, {
-      parts: data.parts.filter(a => a !== modulePath),
-      message: data.message.replace(new RegExp(`!?${modulePath}\\s?`, 'i'), '')
+      parts: data.parts.filter(a => !pathRegexp.test(a)), // a !== modulePath),
+      message: data.message.replace(pathRegexp, ''),
+      routed: true
     })
   }
 
   _getModules (data) {
-    const param = data.parts[0]
+    const param = (!data.routed) ? data.parts[0].replace(/!?/, '') : data.parts[0]
     // SHOULD LOOK FOR A ROUTE BASED ON THE CURRENT PART, NOT THE MESSAGE. THE "ROUTE" PATH SHOULD NOT TRIGGER FOR "ROUTER"!!!!
     // INSTEAD OF LOOKING FOR AN EMPTY MESSAGE, CHECK IF THE PARTS ARRAY IS EMPTY!!!
     console.log(`Looking for modules for: ${param} (length: ${data.parts.length})`)
     return this._modules.filter(a => {
-      if (a.options.onlyMentioned === true && !data.mentioned) return false
-      if (a.options.guildOnly === true && data.type !== 'guild') return false
+      // "mentioned"|"command"|"either"|"any" [trigger]
+      // "guild"|"private"|"any" [type]
+      switch (a.options.type) {
+        case 'guild': if (data.type !== 'guild') { return false }; break
+        case 'private': if (data.type !== 'private') { return false }; break
+        default: break // Any other input will be interpreted as "any"
+      }
+
+      switch (a.options.trigger) {
+        case 'mentioned': if (!data.isMentioned) { return false }; break
+        case 'command': if (!data.isCommand) { return false }; break
+        case 'either': if (!data.isMentioned && !data.isCommand) { return false }; break
+        default: break // Any other input will be interpreted as "any"
+      }
+
+      // if (a.options.onlyMentioned === true && !data.isMentioned) return false
+      // if (a.options.guildOnly === true && data.type !== 'guild') return false
 
       const isMatch = path => {
         return (path === '*' || (path && path === param) || (!path && !param))
       }
 
-      if (typeof a.path === 'string') return isMatch(a.path) // return (a.path === '*' || (a.path && msg.startsWith(a.path)) || (!msg && !a.path))
-      else if (Array.isArray(a.path)) return a.path.some(b => isMatch(b))// (b.path === '*' || (b && msg.startsWith(b)) || (!msg && !b)))
+      let result = false
+      if (typeof a.path === 'string') result = isMatch(a.path) // return (a.path === '*' || (a.path && msg.startsWith(a.path)) || (!msg && !a.path))
+      else if (Array.isArray(a.path)) result = a.path.some(b => isMatch(b))// (b.path === '*' || (b && msg.startsWith(b)) || (!msg && !b)))
+      console.log(`comparing param "${param}" to route "${a.path}", result: ${result}`)
+      return result
     })
   }
   async _route (data, route = undefined, next = undefined) {
     try {
-      console.log(`Wait Start: ${data.content}`)
+      console.log(`Wait Start: ${(route) ? route.message : data.content}, is sub-route: ${(route)}`)
       await this._process(this._getModules(route || data.messageContent), route || data.messageContent, data)
-      console.log(`Wait Done: ${data.content}`)
+      console.log(`Wait Done: ${(route) ? route.message : data.content}`)
       if (next) {
         // ROUTED ROUTERS RETURN ONCE DONE, BUT THERE'S A BIG DELAY IF YOU USE A RETURN STATEMENT. WHY?
         console.log('Next detected for _route!')
@@ -105,9 +128,17 @@ class Router {
   /**
    * @typedef moduleOptions
    * @type {Object}
-   * @property {boolean} [onlyMentioned]
-   * @property {boolean} [guildOnly]
-   * @property {boolean} [commandFormat]
+   * @property {"mentioned"|"command"|"either"|"any"} [trigger] What should trigger this route. Default: 'any'
+   * @property {"guild"|"private"|"any"} [type] What message type should trigger this route. Default: 'guild'
+   */
+
+  /**
+   * @typedef moduleData
+   * @type {Object}
+   * @property {string} path The path that should trigger this module.
+   * @property {Function|Router} module The module. Either a function or another Router.
+   * @property {string} type The type of module. Function or Router.
+   * @property {moduleOptions} options Module Options.
    */
 
   /**
@@ -115,16 +146,17 @@ class Router {
    * @param {string|string[]} path The path that should trigger this module.
    * @param {Function|Router} module The module. Either a function or another Router.
    * @param {moduleOptions} [options=undefined] Module Options.
-   * @param {boolean} [options.onlyMentioned] Whether this route only triggers if Niddabot is mentioned. Default: false
-   * @param {boolean} [options.commandFormat] Whether this route can be triggered by being in "command format" (start with !). This supercedes "onlyMentioned" option.
-   * @param {boolean} [options.guildOnly] Whether this route only triggers if said in a guild. Default: true
+   * @param {"mentioned"|"command"|"either"|"any"} [options.trigger] What should trigger this route. Default: 'either'
+   * @param {"guild"|"private"|"any"} [options.type] What message type should trigger this route. Default: 'guild'
    * @memberof Router
    */
   use (path, module, options = undefined) {
+    /**
+     * @type {moduleOptions}
+     */
     const defaultOptions = {
-      onlyMentioned: false,
-      guildOnly: true,
-      commandFormat: false
+      trigger: 'either',
+      type: 'guild'
     }
 
     this._modules.push({

@@ -75,12 +75,18 @@ module.exports = msg => {
     urls: urls,
     type: getType(msg.channel.type),
     mentions: mentions,
-    mentioned: (mentions.indexOf(msg.self.user.id) > -1),
+    isMentioned: (mentions.indexOf(msg.self.user.discordId) > -1),
+    isCommand: (parts[0].startsWith('!')),
     permissions: (msg.guild) ? msg.guild.me.highestRole.permissions : undefined,
     toString () {
       return `\n` +
-      `Arguments: ${Array.from(this.args.entries())}\n` +
-      ``
+      `Arguments: [${this.args.size}] ${JSON.stringify(Array.from(this.args.entries()).map(a => { return { key: a[0], value: a[1] } }))}\n` +
+      `Message: ${this.message}\n` +
+      `Parts: ${JSON.stringify(this.parts)}\n` +
+      `Type: ${this.type}\n` +
+      `Mentions: ${this.mentions}\n` +
+      `Is mentioned: ${this.isMentioned}\n` +
+      `Is command: ${this.isCommand}`
     }
   }
 }

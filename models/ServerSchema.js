@@ -8,7 +8,6 @@ const serverSchema = new mongoose.Schema({
   guildData: { }, // Optional Wildcard Guild Data.
   guildSettings: { // Guild settings.
     enabled: { type: Boolean, default: true }, // Whether Niddabot is active in this guild.
-    devMode: { type: Boolean, default: false }, // Whether Niddabot is in development mode.
     automaticRegistration: { type: Boolean, default: true }, // Whether Niddabot should automatically register new users when she detects them.
     commandsEnabled: { type: Boolean, default: true }, // Whether Niddabot is accepting commands.
     textResponseLevel: { type: String, enum: { values: ['full', 'limited', 'none'], message: 'Invalid response level.' }, default: 'full' },

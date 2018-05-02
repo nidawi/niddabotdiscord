@@ -229,23 +229,60 @@ const requestUser = async (accessToken, discordId) => {
   }
   const response = await discordRequest((accessToken) ? 'users/@me' : `users/${discordId}`, requestOptions)
   if (response && response.status === 200) {
-    return {
-      discordId: response.data.id,
-      username: response.data.username,
-      discriminator: response.data.discriminator,
-      avatar: response.data.avatar,
-      bot: response.data.bot,
-      mfa_enabled: response.data.mfa_enabled,
-      email: {
-        verified: response.data.verified,
-        address: response.data.email
-      }
-    }
+    return convertUserObject(response.data)
   } else return undefined
 }
+
+/**
+ * @returns {UserData}
+ */
+const convertUserObject = data => {
+  if (!data) return undefined
+  else {
+    return {
+      discordId: data.id,
+      username: data.username,
+      discriminator: data.discriminator,
+      avatar: data.avatar,
+      bot: data.bot,
+      mfa_enabled: data.mfa_enabled,
+      email: {
+        verified: data.verified,
+        address: data.email
+      }
+    }
+  }
+}
+
+/**
+ * @typedef AppData
+ * @type {Object}
+ * @property {string} description
+ * @property {string} name
+ * @property {UserData} owner
+ * @property {boolean} bot_public
+ * @property {boolean} bot_require_code_grant
+ * @property {string} id
+ * @property {string} icon
+ */
+
+/**
+ * @returns {AppData}
+ */
+const convertApplicationObject = data => {
+  return data
+}
+
+/**
+ * @typedef SelfData
+ * @type {Object}
+ * @property {AppData} applicationData
+ * @property {UserData} accountData
+ */
+
 /**
  * d
- * @returns {UserData}
+ * @returns {SelfData}
  */
 const requestSelf = async () => {
   // Request information about self in parallel for speed purposes.
@@ -254,8 +291,8 @@ const requestSelf = async () => {
     discordRequest('users/@me')
   ])
   return {
-    applicationData: appData[0].data,
-    accountData: appData[1].data
+    applicationData: convertApplicationObject(appData[0].data),
+    accountData: convertUserObject(appData[1].data)
   }
 }
 
