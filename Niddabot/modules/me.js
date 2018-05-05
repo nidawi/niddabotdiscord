@@ -1,5 +1,4 @@
 // Route for dealing with "me", i.e. the user making the requests.
-
 const Router = require('../components/Router')
 
 const router = new Router()
@@ -10,9 +9,9 @@ router.use('', async (route, msg, next) => {
 })
 router.use('refresh', async (route, msg, next) => {
   try {
-    const user = await msg.niddabot.user
-    await user.refreshToken()
-    msg.reply(`request received. Your new token ${user.getToken()}`)
+    const user = await (msg.niddabot.user)
+    const newToken = await user.refreshToken()
+    if (newToken) msg.reply(`I successfully refreshed your token. Your new token ${user.getToken()}`)
   } catch (err) { next(err) }
 })
 

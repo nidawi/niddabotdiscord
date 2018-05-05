@@ -13,9 +13,13 @@ class Collection extends Map {
   find (property, value, asArray = false) {
     try {
       if (!property || !value) return undefined
-      const result = this.entries().filter(a => {
-        return Object.getOwnPropertyNames(a.value).indexOf(property) !== -1 && a.value[property] === value
-      })
+      const result = this.entries()
+        .filter(a => {
+          return Object.getOwnPropertyNames(a.value).indexOf(property) !== -1 && a.value[property] === value
+        })
+        .map(a => {
+          return a.value
+        })
       return (asArray) ? result : result[0]
     } catch (err) { return undefined }
   }

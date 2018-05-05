@@ -61,7 +61,7 @@ const clearRanks = async log => {
 }
 /**
  * Gets all ranks currently stored on the server.
- * @returns {*[]}
+* @returns {RankData[]}
  */
 const getRanks = async (transform = true) => {
   const ranks = await Rank.find()
@@ -72,6 +72,7 @@ const getRanks = async (transform = true) => {
  * Gets a rank with the specified name. Names are unique.
  * @param {*} name Name of the rank.
  * @param {*} transform d
+* @returns {RankData}
  */
 const getRank = async (name, transform = true) => {
   const rank = await Rank.findOne({ name: sanitize(name) })
@@ -81,11 +82,29 @@ const getRank = async (name, transform = true) => {
  * d
  * @param {*} id d
  * @param {*} transform d
+* @returns {RankData}
  */
 const getRankById = async (id, transform = true) => {
   const rank = await Rank.findById(sanitize(id))
   return (transform) ? transformRank(rank) : rank
 }
+
+/**
+ * @typedef RankData
+ * @type {Object}
+ * @property {string} id
+ * @property {string} name
+ * @property {number} privilege
+ * @property {boolean} canBeEdited
+ * @property {boolean} canBeDeleted
+ * @property {boolean} requires2FA
+ * @property {boolean} requiresAuthenticated
+ * @property {number} maxMembers
+ */
+
+/**
+  * @returns {RankData}
+  */
 const transformRank = rank => {
   return {
     id: rank._id,

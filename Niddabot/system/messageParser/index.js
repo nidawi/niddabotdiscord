@@ -45,19 +45,20 @@ const getType = text => {
   }
 }
 
-/**
- * @typedef messageContent
- * @type {Object}
- * @property {Map<string, *>} args
- */
+const fullSplit = text => {
+  return [].concat(...text
+    .split(/(?<!")\s(?=")|(?<=")\s(?!")|(?=-{2})/)
+    .map(a => a.trim())
+    .map(a => { if (a.indexOf('"') === -1) {return a.split(/\s/) } else return a }))
+    .map(a => a.replace(/"/g, ''))
+    .filter(Boolean)
+}
+const partSplit = text => {
+  return text.trim().split(' ').filter(Boolean)
+}
 
-/**
- * dd
- * @param {*} msg DiscordJS message.
- * @returns {messageContent}
- */
 module.exports = msg => {
-  const parts = msg.content.trim().split(' ').filter(Boolean)
+  const parts = (msg.content.indexOf('"' > -1)) ? fullSplit(msg.content) : partSplit(msg.content)  //msg.content.trim().split(' ').filter(Boolean)
   const cleanedParts = parts.filter(a => { return (!a.startsWith('--') && !a.startsWith('@') && !emojiRegex.test(a) && !mentionRegex.test(a) && !isURL(a)) })
   const args = Array.from(new Set(parts.filter(a => a.startsWith('--'))))
   const emojis = Array.from(new Set(parts.filter(a => emojiRegex.test(a)))).map(a => { const cleanedEmojis = a.replace(emojiCleanRegex, '').split(':'); return { name: `:${cleanedEmojis[0]}:`, id: cleanedEmojis[1], animated: /.*<a:.*/.test(a) } })
@@ -82,7 +83,8 @@ module.exports = msg => {
       return `\n` +
       `Arguments: [${this.args.size}] ${JSON.stringify(Array.from(this.args.entries()).map(a => { return { key: a[0], value: a[1] } }))}\n` +
       `Message: ${this.message}\n` +
-      `Parts: ${JSON.stringify(this.parts)}\n` +
+      `Parts (clean): ${JSON.stringify(this.parts)}\n` +
+      `Parts: ${JSON.stringify(parts)}\n` +
       `Type: ${this.type}\n` +
       `Mentions: ${this.mentions}\n` +
       `Is mentioned: ${this.isMentioned}\n` +

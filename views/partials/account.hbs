@@ -1,7 +1,12 @@
-{{#if discord.account}}
+{{#if discord}}
   <div class="account">
-    <p>{{discord.account.name}}</p>
-    <img src="/img/niddabot.png">
+    <!-- We prioritize actual Discord Info here, over Niddabot Account Info. -->
+    {{#if discord._user.discordUser}} <p>{{discord._user.discordUser.username}}</p>
+    {{else}} <p>{{discord.name}}</p>
+    {{/if}}
+    {{#if discord._avatar}} <img src="{{discord._avatar}}">
+    {{else}} <img src="/img/niddabot.png">
+    {{/if}}
     <div class="acc-dropdown">
       <a href="/user" title="Get Niddabot onto your server!">Get Niddabot!</a>
       <hr>

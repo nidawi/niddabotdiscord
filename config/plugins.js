@@ -14,7 +14,8 @@ module.exports = {
     // to protect ourselves from XSS (and block all sources other than our own server, which is fine for this assignment [this would also block inline scripts if handlebars didn't]).
     contentSecurityPolicy: {
       directives: {
-        defaultSrc: ['\'self\'']
+        defaultSrc: ['\'self\''],
+        imgSrc: ['\'self\'', 'cdn.discordapp.com']
       }
     }
   }),

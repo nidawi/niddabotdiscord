@@ -200,7 +200,8 @@ header nav a {
   background: rgba(10, 10, 10, 0.75);
   min-width: calc(960px - 20px);
   max-width: calc(1200px - 20px);
-  padding: 10px;
+  min-height: calc(100% - 20px);
+  padding: 20px;
 }
 
 .content .view-wrapper hr {
@@ -247,7 +248,32 @@ header nav a {
   background: initial;
 }
 
-
+footer {
+  display: block;
+  position: fixed;
+  background: rgb(22, 22, 22);
+  width: 100%;
+  height: 30px;
+  bottom: 0px;
+  color: white;
+  font-family: "Courier";
+  margin: 0;
+  padding: 0;
+  text-align: center;
+}
+footer ul, footer li {
+  list-style: none;
+  display: inline-block;
+  padding: 0;
+  margin-top: 3px;
+}
+footer a {
+  color: white;
+  text-decoration: none;
+}
+footer a:hover {
+  text-decoration: underline;
+}
 
 
 /* FLASH MESSAGES */

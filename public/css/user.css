@@ -30,7 +30,7 @@
 
 .narrow-view .narrow-heading {
   font-family: 'Hi Melody', cursive;
-  margin: 20px 0 20px 0;
+  margin: 10px 0 20px 0;
 }
 .narrow-view .narrow-heading .title {
   color: rgb(0, 86, 125);
@@ -102,7 +102,6 @@ form .terms-wrapper input[type=checkbox] {
   margin-right: 20px;
 }
 
-
 .submit-wrapper {
   margin: 10px 0 10px 0;
 }
@@ -134,4 +133,11 @@ form .terms-wrapper input[type=checkbox] {
   border: 1px solid rgb(31, 30, 29);
   background: rgb(10, 64, 134);
   color: rgb(217, 217, 214);
+}
+
+form fieldset {
+  border: none;
+}
+form fieldset input[type=text], form fieldset input[type=password] {
+  width: calc(50% - 20px) !important;
 }

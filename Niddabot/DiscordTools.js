@@ -1,6 +1,8 @@
 const request = require('request-promise-native')
 
 const Collection = require('./components/Collection')
+const DiscordGuild = require('./structs/DiscordGuild')
+const DiscordChannel = require('./structs/DiscordChannel')
 const DiscordEmoji = require('./structs/DiscordEmoji')
 
 const discordURLs = {
@@ -200,6 +202,7 @@ const refreshToken = async refreshToken => {
 /**
  * @typedef UserData
  * @type {Object}
+ * @property {string} discordId
  * @property {string} username
  * @property {string} discriminator
  * @property {string} avatar
@@ -207,12 +210,6 @@ const refreshToken = async refreshToken => {
  * @property {boolean} mfa_enabled
  * @property {UserDataEmail} email
  */
-
-
-
-
-
-
 
 /**
  * d
@@ -281,7 +278,8 @@ const convertApplicationObject = data => {
  */
 
 /**
- * d
+ * Request Niddabot herself.
+ * @async
  * @returns {SelfData}
  */
 const requestSelf = async () => {
@@ -297,72 +295,61 @@ const requestSelf = async () => {
 }
 
 /**
- * d
- * @param {*} guildId d
+ * @async
+ * @param {UserData} user
+ * @returns {*}
+ */
+const requestUserAvatar = async user => {
+  const avatarUrl = `https://cdn.discordapp.com/avatars/${user.discordId}/${user.avatar}`
+}
+
+/**
+ * Requests a list of Emojis from the specified Guild. You can, optionally, provide an emojiId and fetch only that specific emoji instead.
+ * @async
+ * @param {string} guildId Id of the Discord Guild.
+ * @param {string} [emojiId] OPTIONAL Id of the specific Emoji to fetch.
+ * @returns {DiscordEmoji[]|DiscordEmoji}
+ */
+const requestEmoji = async (guildId, emojiId = undefined) => {
+  if (!guildId) return undefined // We need a guild Id.
+  const response = await discordRequest(`guilds/${guildId}${(emojiId) ? `/${emojiId}` : ''}`)
+  if (response && response.status === 200) {
+    if (Array.isArray(response.data)) return response.data.map(a => { return [a.id, new DiscordEmoji(Object.assign(a, { guildId: guildId }))] })
+    else return new DiscordEmoji(Object.assign(response.data, { guildId: guildId }))
+  } else return undefined
+}
+
+/**
+ * Fetches an object representing a Discord Guild.
+ * @async
+ * @param {string} guildId Id of the Discord Guild.
+ * @returns {DiscordGuild}
  */
 const requestGuild = async guildId => {
   if (!guildId) return undefined
   const response = await discordRequest(`guilds/${guildId}`)
   if (response && response.status === 200) {
-    return Object.assign({}, response.data, {
-      channels: await requestChannels(guildId)
+    return Object.assign(new DiscordGuild(response.data), {
+      channels: new Collection((await requestChannels(guildId)).map(a => { return [a.id, a] })),
+      owner: await requestUser(undefined, response.data.owner_id),
+      emojis: new Collection(response.data.emojis.map(a => { return [a.id, new DiscordEmoji(Object.assign(a, { guildId: guildId }))] }))
     })
   } else return undefined
 }
 
 /**
- * @typedef discordChannel
- * @type {Object}
- * @property {string} guildId
- * @property {string} name
- * @property {string} topic
- * @property {string} parentId
- * @property {boolean} nsfw
- * @property {number} position
- * @property {number} type
- * @property {string} id
- * @property {number} bitrate
- * @property {number} userLimit
- * @property {string[]} permissionOverwrites
- */
-
-const convertChannelType = type => {
-  switch (type) {
-    case 0: return 'text'
-    case 1: return 'private'
-    case 2: return 'voice'
-    case 3: return 'group'
-    case 4: return 'category'
-    default: return 'unknown'
-  }
-}
-
-/**
- * d
- * @param {string} guildId d
- * @returns {discordChannel[]}
+ * Returns an array of objects representing the channels of a guild.
+ * @async
+ * @param {string} guildId Id of the Discord Guild.
+ * @returns {DiscordChannel[]}
  */
 const requestChannels = async guildId => {
   if (!guildId) return undefined
   const response = await discordRequest(`guilds/${guildId}/channels`)
   if (response && response.status === 200) {
-    return new Collection(response.data
-      .filter(a => a.type !== 4)
-      .map(a => {
-        return [a.id, {
-          guildId: a.guild_id,
-          name: a.name,
-          topic: a.topic,
-          parentId: a.parent_id,
-          nsfw: a.nsfw,
-          position: a.position,
-          type: convertChannelType(a.type),
-          id: a.id,
-          bitrate: a.bitrate,
-          userLimit: a.user_limit,
-          permissionOverwrites: a.permission_overwrites
-        }]
-      }))
+    return response.data
+      .filter(a => a.type !== 4) // Filter away categories, those aren't relevant.
+      .map(a => { return new DiscordChannel(a) })
   } else return undefined
 }
 
@@ -380,5 +367,6 @@ module.exports = {
   refreshToken: refreshToken,
   requestUser: requestUser,
   requestGuild: requestGuild,
-  requestChannels: requestChannels
+  requestChannels: requestChannels,
+  requestEmoji: requestEmoji
 }

@@ -1,6 +1,6 @@
 // Account tools for handling user accounts.
 
-const NiddabotAccount = require('./NiddabotAccount')
+const NiddabotAccount = require('./structs/NiddabotAccount')
 const Account = require('../models/Schemas').account
 const User = require('../models/Schemas').user
 
@@ -9,6 +9,27 @@ const sanitize = require('mongo-sanitize')
 
 const users = require('./UserTools')
 const servers = require('./ServerTools')
+
+/**
+ * @typedef UnpopulatedAccount
+ * @type {Object}
+ * @property {string} id
+ * @property {string} name
+ * @property {string} [pass]
+ * @property {string} avatar
+ * @property {string} email
+ * @property {string} type
+ * @property {string} nationality
+ * @property {string} status
+ * @property {string} comment
+ * @property {string} discordUser
+ * @property {string[]} ownedServers
+ * @property {boolean} acceptedTerms
+ * @property {boolean} receiveEmails
+ * @property {Date} createdAt
+ * @property {Date} updatedAt
+ * @property {Date} unlockedAt
+ */
 
 const createAccount = (data, transform = true) => {
   // Create an account.
@@ -28,32 +49,56 @@ const updateAccount = async (id, newData, transform = true) => {
   const account = await Account.findByIdAndUpdate(id, newData)
   return (transform) ? transformAccount(account) : account
 }
-
+/**
+ * @param {*} name
+ * @param {*} transform
+ * @returns {UnpopulatedAccount}
+ */
 const fetchAccount = async (name, transform = true) => {
   // Fetch an account.
   const account = await Account.findOne({ name: sanitize(name) })
+  if (!account) return undefined
   return (transform) ? transformAccount(account) : account
 }
+/**
+ * @param {*} name
+ * @param {*} transform
+ * @returns {UnpopulatedAccount}
+ */
 const fetchAccountById = async (id, transform = true) => {
   const account = await Account.findById(sanitize(id))
+  if (!account) return undefined
   return (transform) ? transformAccount(account) : account
 }
 
+/**
+ * @param {*} acc
+ * @returns {UnpopulatedAccount}
+ */
 const transformAccount = acc => {
   return {
     id: acc._id,
     name: acc.name,
-    email: acc.email,
+    pass: '',
     avatar: acc.avatar,
+    email: acc.email,
     type: acc.type,
-    status: acc.status,
-    ownedServers: acc.ownedServers,
-    discordUser: acc.discordUser,
     nationality: acc.nationality,
-    receiveEmails: acc.receiveEmails
+    status: acc.status,
+    comment: acc.comment,
+    discordUser: acc.discordUser,
+    ownedServers: acc.ownedServers,
+    acceptedTerms: acc.acceptedTerms,
+    receiveEmails: acc.receiveEmails,
+    createdAt: acc.createdAt,
+    updatedAt: acc.updatedAt,
+    unlockedAt: acc.unlockedAt
   }
 }
 
+/**
+ * @returns {UnpopulatedAccount}
+ */
 const getAccount = async (name, password) => {
   // Check for basic verification (essentially the things that schemas would do for us but this isn't a save or an update so we will do it manually)
   const errs = []
@@ -112,6 +157,34 @@ const getNiddabotAccount = async id => {
   return Object.assign(nidAcc, acc)
 }
 
+/**
+ * @typedef PopulatedAccount
+ * @type {Object}
+ * @property {string} id
+ * @property {string} name
+ * @property {string} email
+ * @property {string} avatar
+ * @property {string} type
+ * @property {string} status
+ * @property {*[]} ownedServers
+ * @property {*} discordUser
+ * @property {string} nationality
+ * @property {boolean} receiveEmails
+ */
+
+/**
+ * @param {string} identifier Name or Id.
+ * @returns {PopulatedAccount}
+ */
+const populateAccount = async (identifier) => {
+  const account = await fetchAccount(identifier) || await fetchAccountById(identifier)
+  if (!account) return undefined
+  return Object.assign({}, account, {
+    ownedServers: account.ownedServers,
+    discordUser: account.discordUser
+  })
+}
+
 module.exports = {
   createAccount: createAccount,
   getAccount: getAccount,
@@ -119,5 +192,6 @@ module.exports = {
   fetchAccountById: fetchAccountById,
   getNiddabotAccount: getNiddabotAccount,
   updateAccount: updateAccount,
+  populateAccount: populateAccount,
   verifyDatabase: verifyDatabase
 }

@@ -6,26 +6,28 @@ const Discord = require('./DiscordTools')
 const sanitize = require('mongo-sanitize')
 
 /**
- * @typedef NiddabotServerObject
- * @type {object}
- * @property {string} id Id of the Niddabot Server.
+ * @typedef ServerData
+ * @type {Object}
+ * @property {string} id
  * @property {string} guildId
- * @property {object} guildData
- * @property {object} guildSettings
+ * @property {*} guildData
+ * @property {ServerSettings} guildSettings
+ * @property {*} [niddabotNotifications]
  * @property {string[]} niddabotCommands
  * @property {string[]} niddabotAccounts
- * @property {object} niddabotStatus
- * @property {string[]} niddabotUsers
+ * @property {string[]} [niddabotUsers]
+ * @property {*} [niddabotStatus]
  * @property {Date} createdAt
  * @property {Date} updatedAt
  */
 
 /**
  * Adds a server to Niddabot's database. If it already exists, the account Id will be added to its list of users with edit permissions.
+ * @async
  * @param {string} guildId The guildId of the Discord Guild.
  * @param {string} accountId The Id of the Niddabot account.
  * @param {boolean} [transform=true] Whether the returned server should be transformed or returned as a Mongoose query document. Defaults to true.
- * @returns {Promise<NiddabotServerObject>}
+ * @returns {ServerData|Server}
  */
 const addServer = async (guildId, accountId, transform = true) => {
   try {
@@ -44,10 +46,11 @@ const addServer = async (guildId, accountId, transform = true) => {
 }
 /**
  * Fetches a server from the Niddabot database using either its Niddabot Server Id or its Discord guildId. Returns undefined if no server is found.
+ * @async
  * @param {string} serverId The Id of the Niddabot Server.
  * @param {string} guildId The guildId of the Discord Guild.
  * @param {boolean} [transform=true] Whether the returned server should be transformed or returned as a Mongoose query document. Defaults to true.
- * @returns {Promise<NiddabotServerObject>}
+ * @returns {ServerData|Server}
  */
 const fetchServer = async (serverId, guildId, transform = true) => {
   if (!serverId && !guildId) return undefined // If no Id is provided, return undefined.
@@ -57,19 +60,20 @@ const fetchServer = async (serverId, guildId, transform = true) => {
 }
 
 /**
- * d
- * @param {*} id d
- * @param {*} guildId d
+ * @async
+ * @param {string} id Niddabot Server Id.
+ * @param {string} [guildId] Id of the associated Discord Guild.
+ * @returns {NiddabotServer}
  */
-const getNiddabotServer = async (id, guildId) => {
-  const server = await fetchServer(id, guildId)
+const getNiddabotServer = async (id, guildId = undefined) => {
+  if (!id && !guildId) return undefined
+  const serverData = await fetchServer(id, guildId)
+  if (!serverData) return undefined
 
-  server.guildInfo = await Discord.requestGuild(guildId || server.guildId)
-  if (server.guildInfo) {
-    server.owner = await Discord.requestUser(undefined, server.guildInfo.owner_id)
-  }
+  const server = new NiddabotServer(serverData)
+  server.guild = await Discord.requestGuild(guildId || server.guildId)
 
-  return Object.assign(new NiddabotServer(), server)
+  return server
 }
 
 const transformServer = data => {

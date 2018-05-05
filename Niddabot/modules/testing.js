@@ -15,6 +15,9 @@ router.use('*', async (route, msg, next) => {
   console.log(route.hello)
   next()
 })
+router.use(/&{3}/, async (route, msg, next) => {
+  msg.reply('Regexp successful!')
+})
 router.use('', (route, msg, next) => {
   msg.reply(`This is my testing module. Run a test by typing "test" followed by the test identifier.`)
 })
@@ -24,13 +27,13 @@ router.use('error', (route, msg, next) => {
 router.use('parts', (route, msg, next) => {
   msg.reply(`parts are: ${route.parts}`)
 })
-router.use('parser', (route, msg, next) => {
-  const parse = route.message
-})
 router.use('session', (route, msg, next) => {
   msg.reply(`Session currently reports: ${JSON.stringify(msg.session)}.`)
   if (route.hasArgument('add')) { msg.reply('I will add { a = 25 } to it.'); msg.session.a = 25 }
   msg.reply(`Session now reports: ${JSON.stringify(msg.session)}.`)
+})
+router.use('repeat', (route, msg, next) => {
+  msg.reply(route.parts[0])
 })
 
 module.exports = router

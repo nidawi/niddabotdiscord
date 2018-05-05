@@ -4,6 +4,10 @@
  * @property {string[]} parts
  */
 
+const getType = type => {
+  return Object.prototype.toString.call(type).replace(/[[\s\]]|object/gi, '').toLowerCase()
+}
+
 /**
  * Router.
  */
@@ -66,7 +70,7 @@ class Router {
   }
 
   _getModules (data) {
-    const param = (!data.routed) ? data.parts[0].replace(/!?/, '') : data.parts[0]
+    const param = (data.parts.length > 0) ? ((!data.routed) ? data.parts[0].replace(/!?/, '') : data.parts[0]) : ''
     // SHOULD LOOK FOR A ROUTE BASED ON THE CURRENT PART, NOT THE MESSAGE. THE "ROUTE" PATH SHOULD NOT TRIGGER FOR "ROUTER"!!!!
     // INSTEAD OF LOOKING FOR AN EMPTY MESSAGE, CHECK IF THE PARTS ARRAY IS EMPTY!!!
     console.log(`Looking for modules for: ${param} (length: ${data.parts.length})`)
@@ -86,15 +90,15 @@ class Router {
         default: break // Any other input will be interpreted as "any"
       }
 
-      // if (a.options.onlyMentioned === true && !data.isMentioned) return false
-      // if (a.options.guildOnly === true && data.type !== 'guild') return false
+      // if (a.options.devOnly && !data.)
 
       const isMatch = path => {
-        return (path === '*' || (path && path === param) || (!path && !param))
+        if (getType(path) === 'regexp') return path.test(param)
+        else return (path === '*' || (path && path === param) || (!path && !param))
       }
 
       let result = false
-      if (typeof a.path === 'string') result = isMatch(a.path) // return (a.path === '*' || (a.path && msg.startsWith(a.path)) || (!msg && !a.path))
+      if (['string', 'regexp'].indexOf(getType(a.path)) !== -1) result = isMatch(a.path) // return (a.path === '*' || (a.path && msg.startsWith(a.path)) || (!msg && !a.path))
       else if (Array.isArray(a.path)) result = a.path.some(b => isMatch(b))// (b.path === '*' || (b && msg.startsWith(b)) || (!msg && !b)))
       console.log(`comparing param "${param}" to route "${a.path}", result: ${result}`)
       return result
@@ -124,12 +128,17 @@ class Router {
       }
     })
   }
+  getUsedPaths (friendly = true) {
+    if (friendly) return Array.from(new Set(this._modules.map(a => `"${a.path || '{base}'}"`)))
+    else return Array.from(new Set(this._modules.map(a => a.path)))
+  }
 
   /**
    * @typedef moduleOptions
    * @type {Object}
    * @property {"mentioned"|"command"|"either"|"any"} [trigger] What should trigger this route. Default: 'any'
    * @property {"guild"|"private"|"any"} [type] What message type should trigger this route. Default: 'guild'
+   * @property {boolean} devOnly Whether this route should only trigger when devMode is active. Default: false
    */
 
   /**
@@ -148,6 +157,7 @@ class Router {
    * @param {moduleOptions} [options=undefined] Module Options.
    * @param {"mentioned"|"command"|"either"|"any"} [options.trigger] What should trigger this route. Default: 'either'
    * @param {"guild"|"private"|"any"} [options.type] What message type should trigger this route. Default: 'guild'
+   * @property {boolean} [options.devOnly] Whether this route should only trigger when devMode is active. Default: false
    * @memberof Router
    */
   use (path, module, options = undefined) {
@@ -156,7 +166,8 @@ class Router {
      */
     const defaultOptions = {
       trigger: 'either',
-      type: 'guild'
+      type: 'guild',
+      devOnly: false
     }
 
     this._modules.push({

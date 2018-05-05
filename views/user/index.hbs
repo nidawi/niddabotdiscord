@@ -1,0 +1,57 @@
+{{#section 'head'}}
+  <title>Your Account | Niddabot: Discord | Nidawi.me</title>
+  <link rel="stylesheet" type="text/css" href="/css/user.css">
+{{/section}}
+<div class="narrow-view">
+  <div class="narrow-heading">
+    <h1 class="title">Niddabot</h1>
+    <p class="flavour">More than your average chat bot. She's your friend and loyal companion through your digital life.</p>
+  </div>
+  <hr>
+  <h1>Account Details</h1>
+  <hr>
+  <p>These are the details that are currently stored about your account. Please note that not all details can be changed on this page. If you desire to change something that is not included here, please do not hesitate to contact support.</p>
+  <form method="POST" action="/signup">
+    <input type="hidden" name="_csrf" value="{{csrfToken}}">
+    <div class="details-wrapper">
+      <fieldset>
+        <input type="text" name="name" placeholder="Account Name" value="{{discord.name}}" readonly>
+        <input type="text" name="email" placeholder="E-mail Address" value="{{discord.email}}">
+      </fieldset>
+      <fieldset>
+        <input type="password" name="password" placeholder="Current password" value="">
+        <input type="password" name="password" placeholder="New password" value="">
+      </fieldset>
+
+    </div>
+    <div class="terms-wrapper">
+
+
+
+
+      <ul>
+
+        <li><label><input type="checkbox" name="emailsChecked" checked>I agree to being contacted through e-mail (outside of critical issues).</label></li>
+        <li><label><input type="checkbox" name="termsChecked">I agree to Niddabot's <a href="">Terms of Service</a>.</label></li>
+      </ul>
+    </div>
+    <div class="submit-wrapper">
+      <input type="submit" class="confirm" value="Save changes">
+    </div>
+  </form>
+  <hr>
+  <h1>Discord Details</h1>
+  <hr>
+  {{#if discord._user.discordUser}}
+    <img src="{{discord._avatar}}">
+    <p>You have the following Discord User associated with your account: {{discord._user.discordUser.username}}#{{discord._user.discordUser.discriminator}}. While on a Discord server, Niddabot will treat you as a <i>{{discord._user.niddabotRank.name}}</i>.</p>
+    <p>Your Access Token {{discord._token}} {{#if discord._validToken}}<a href="/user/refresh">refresh</a>{{/if}}</p>
+  {{else}}
+    <p>You have not yet registered a Discord User. You can <i>ascend</i> at any time by going <a href="http://localhost:3000/user/ascend">here</a>!</p>
+  {{/if}}
+  <hr>
+  <h1>Your Servers</h1>
+  <hr>
+  <p>Your account is associated with the following Discord Guilds where Niddabot currently operates:</p>
+  {{discord.ownedServers}}
+</div>

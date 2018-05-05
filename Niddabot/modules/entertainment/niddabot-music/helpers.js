@@ -7,7 +7,7 @@ const ytdl = require('ytdl-core')
  * @returns {string}
  */
 const secondsToMinutes = (seconds) => {
-  return `${Math.floor(seconds / 60)} min, ${seconds % 60} seconds`
+  return `${Math.floor(seconds / 60)} min, ${Math.floor(seconds % 60)} seconds`
 }
 /**
  * Returns a string describing the song.

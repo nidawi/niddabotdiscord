@@ -1,5 +1,16 @@
 // Tools for Niddabot User Accounts.
 
+/**
+ * @typedef TokenData
+ * @type {Object}
+ * @property {string} accessToken
+ * @property {string} tokenType
+ * @property {Date} lastRequested
+ * @property {Date} expiresAt
+ * @property {string} refreshToken
+ * @property {string[]} scope
+ */
+
 const User = require('../models/Schemas').user
 const NiddabotUser = require('./structs/NiddabotUser')
 const discord = require('./DiscordTools')
@@ -21,7 +32,14 @@ const addUser = async (discordId, niddabotAccountId = undefined, niddabotRank = 
   await user.save()
   return (transform) ? transformUser(user) : user
 }
+/**
+ * Updates the Access Token associated with the provided Niddabot User / Discord User Id.
+ * @param {string} id Niddabot User / Discord User Id.
+ * @param {boolean} transform Whether the result should be transformed or remain as a mongoose document. Default: true
+ * @returns {*}
+ */
 const updateUserToken = async (id, transform = true) => {
+  // Fetch the user first, leaving transform as false so that we can access the mongoose document.
   const user = await findUser(id, false) || await getUser(id, false)
   if (user) {
     const tokenData = await discord.refreshToken(user.tokenData.refreshToken)
@@ -67,14 +85,12 @@ const getUser = async (id, transform = true) => {
 const getNiddabotUser = async (id, discordId) => {
   const user = ((discordId) ? await findUser(discordId) : await getUser(id)) || { discordId: discordId }
 
-  // The user has a token. Use it.
-  user.discordInfo = (user.tokenData) ? await discord.requestUser(user.tokenData.accessToken, undefined) : await discord.requestUser(undefined, discordId || user.discordId)
-  // Provide limited Token Information.
-  if (user.TokenData) user.tokenData = { lastRequested: user.tokenData.lastRequested, expiresAt: user.tokenData.expiresAt, scope: user.tokenData.scope }
-  // Transform Niddabot Rank, if any.
-  if (user.niddabotRank) user.niddabotRank = await ranks.getRankById(user.niddabotRank.rankId)
-
-  return Object.assign(new NiddabotUser(), user)
+  return Object.assign(new NiddabotUser(user), {
+    // Load Discord Info
+    discordUser: (user.tokenData) ? await discord.requestUser(user.tokenData.accessToken, undefined) : await discord.requestUser(undefined, discordId || user.discordId),
+    // Transform and Load Niddabot Rank
+    niddabotRank: (user.niddabotRank) ? await ranks.getRankById(user.niddabotRank.rankId) : undefined
+  })
 }
 
 const createUser = data => {
@@ -106,16 +122,60 @@ const updateUser = (id, newData) => {
   })
 }
 
+/**
+ * @typedef UserRankData
+ * @type {Object}
+ * @property {string} rankId
+ * @property {string} rankSource
+ */
+
+/**
+ * @typedef UserStandingData
+ * @type {Object}
+ * @property {string} nickname
+ * @property {string} comment
+ * @property {number} rating
+ * @property {boolean} ignored
+ */
+
+/**
+ * @typedef UserData
+ * @type {Object}
+ * @property {string} id The Id of this Niddabot User.
+ * @property {string} discordId The Id of the associated Discord User.
+ * @property {TokenData} [tokenData] The data of the associated Discord Access Token.
+ * @property {{}} [customData] Custom Niddabot User Data. Untrackable.
+ * @property {number} [rating] The associated Niddabot Rating. Used by Niddabot.
+ * @property {number} [points]
+ * @property {Date} [lastSeen]
+ * @property {UserStandingData} niddabotStanding
+ * @property {UserRankData} niddabotRank
+ * @property {string} niddabotAccount
+ * @property {string[]} niddabotServers
+ * @property {string} status
+ * @property {Date} createdAt
+ * @property {Date} updatedAt
+ */
+
+/**
+  * @returns {UserData}
+  */
 const transformUser = user => {
   return {
     id: user._id,
     discordId: user.discordId,
     tokenData: user.tokenData,
+    customData: user.customData,
+    rating: user.rating,
+    points: user.points,
+    lastSeen: user.lastSeen,
     niddabotStanding: user.niddabotStanding,
     niddabotRank: user.niddabotRank,
     niddabotAccount: user.niddabotAccount,
     niddabotServers: user.niddabotServers,
-    status: user.status
+    status: user.status,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt
   }
 }
 
