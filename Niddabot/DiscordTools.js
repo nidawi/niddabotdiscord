@@ -90,7 +90,7 @@ const createRequestBody = (tokenOrCode, refresh = false) => {
   })
 }
 
-const wait = (delay) => {
+const wait = (delay = 500) => {
   return new Promise((resolve, reject) => {
     setTimeout(() => { resolve() }, delay)
   })
@@ -125,9 +125,9 @@ const discordRequest = async (url, options) => {
         // If we get rate-limited, we wait for the specified amount of time and then try again.
         // This is not a great solution but it will have to do for now. I'll need to refactor some calls.
         // We're making way too many calls right now.
-        console.log(`Discord Rate-limit reached. Global Limit: ${response.body.global}, Retry after: ${response.body.retry_after}\n` +
+        console.log(`Discord Rate-limit reached. Global Limit: ${response.body['global']}, Retry after: ${response.body['retry_after']}\n` +
         `Response: ${response.body}`)
-        await wait(response.body.retry_after || 500)
+        await wait(response.body['retry_after'] || 500)
         return discordRequest(url, options)
       } else {
         return { status: response.statusCode, data: response.body }
