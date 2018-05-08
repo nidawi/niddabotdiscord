@@ -2,6 +2,7 @@
   Dark: rgb(25, 76, 140);
   Medium: rgb(0, 86, 125);
   Light: rgb(0, 123, 161);
+  Highlight2: rgb(34, 189, 236);
 */
 
 ::-webkit-scrollbar-track
@@ -35,7 +36,7 @@ header {
   display: block;
   position: relative;
   background: rgb(22, 22, 22);
-  min-width: 100%;
+  width: 100%;
   min-width: 960px;
   height: 60px;
   top: 0;
@@ -137,7 +138,7 @@ header nav a {
   position: absolute;
   width: 100%;
   min-width: 150px;
-  z-index: 1;
+  z-index: 2;
   top: 100%;
   right: 0px;
   background: rgb(22, 22, 22);
@@ -178,7 +179,8 @@ header nav a {
   display: block;
   position: absolute;
   overflow: auto;
-  min-width: 100%;
+  width: 100%;
+  min-width: 960px;
   min-height: calc(100% - 60px);
   background: rgb(19, 30, 43);
   /*
@@ -202,10 +204,12 @@ header nav a {
   max-width: calc(1200px - 20px);
   min-height: calc(100% - 20px);
   padding: 20px;
+  padding-bottom: 60px;
 }
 
 .content .view-wrapper hr {
   border-color: rgb(0, 86, 125);
+  margin: 15px 0 15px 0;
 }
 .content .view-wrapper .page-heading {
   font-family: 'Hi Melody', cursive;
@@ -223,14 +227,19 @@ header nav a {
 .content .view-wrapper .page-heading .flavour {
   color: rgb(217, 217, 214);
   font-style: italic;
-  font-size: 14px;
+  font-size: 18px;
   margin: 0;
   margin-top: 2px;
+  text-align: center;
 }
 .content .view-wrapper h1 {
   text-align: center;
   color: rgb(217, 217, 214);
-  margin: 0 0 15px 0;
+  margin: 5px 0 5px 0;
+}
+.content .view-wrapper h2 {
+  color: rgb(0, 86, 125);
+  margin: 5px 0 5px 0;
 }
 .content .view-wrapper p {
   color: rgb(217, 217, 214);
@@ -253,6 +262,7 @@ footer {
   position: fixed;
   background: rgb(22, 22, 22);
   width: 100%;
+  min-width: 960px;
   height: 30px;
   bottom: 0px;
   color: white;
@@ -265,45 +275,49 @@ footer ul, footer li {
   list-style: none;
   display: inline-block;
   padding: 0;
-  margin-top: 3px;
+  margin-top: 1px;
 }
 footer a {
-  color: white;
+  color: rgb(217, 217, 214);
   text-decoration: none;
 }
 footer a:hover {
-  text-decoration: underline;
+  color: white;
 }
 
 
 /* FLASH MESSAGES */
 .flashmsg {
-  display: block;
+  display: inline-block;
+  position: relative;
   width: calc(100% - 4px);
-  z-index: 10;
-  font-size: 30px;
+  z-index: 1;
   font-family: 'Fira Sans', sans-serif;
   color: white;
   user-select: none;
+  padding: 0 !important;
+  margin: 0 !important;
 }
-.flashmsg .text {
+.flashmsg * {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+.flashmsg p {
   display: inline-block;
   position: relative;
-  height: 100%;
-  width: calc(100% - 35px);
+  font-size: 28px !important;
   text-align: center;
-}
-.flashmsg .box {
-  display: block;
-  position: relative;
-  float: right;
+  width: calc(100% - 36px - 5px);
+  margin: 5px 0 5px 0 !important;
 }
 .flashmsg button {
+  display: inline-block;
+  position: absolute;
   color: white;
   outline: none;
-  font-size: 25px;
-  padding: 2px 5px 2px 5px;
-  margin: 0px;
+  font-size: 28px !important;
+  top: 50% !important;
+  transform: translateY(-50%);
 }
 .flashmsg button:hover {
   filter: brightness(1.1);
@@ -319,4 +333,17 @@ footer a:hover {
 .flashmsg-notification {
   background: rgba(219, 179, 84, 0.5);
   border: 2px solid rgba(219, 179, 84, 0.75);
+}
+.noticeBox {
+  position: relative;
+  margin-top: 30px;
+  background: rgb(22, 22, 22);
+  font-family: "Courier";
+  padding: 25px;
+  font-style: italic;
+  font-size: 20px;
+  color: rgb(34, 189, 236);
+  text-align: center;
+  border-radius: 5px;
+  border: 1px solid rgb(34, 189, 236);
 }

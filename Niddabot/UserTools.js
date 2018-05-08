@@ -46,16 +46,33 @@ const updateUserToken = async (id, transform = true) => {
     if (tokenData) {
       user.tokenData = tokenData
 
-      user.save()
+      await user.save()
       return (transform) ? transformUser(user) : user
     }
   }
 }
 /**
+ * Revokes the Access Token associated with the provided Niddabot User / Discord User Id.
+ * @param {string} id Niddabot User / Discord User Id.
+ * @returns {boolean}
+ */
+const revokeUserToken = async id => {
+  const user = await findUser(id, false) || await getUser(id, false)
+  if (user && user.tokenData) {
+    const revokeSuccessful = await discord.revokeToken(user.tokenData.accessToken)
+    if (revokeSuccessful) {
+      user.tokenData = undefined
+
+      await user.save()
+      return true
+    }
+  }
+}
+
+/**
  * Finds a Niddabot User Account with the specified Discord Id. Returns undefined if nothing was found.
  * @param {string} discordId The Discord User Id.
  * @param {boolean} transform Whether the result should be transformed or remain as a mongoose document. Default: true
- * @returns { hi }
  */
 const findUser = async (discordId, transform = true) => {
   if (!discordId) return undefined
@@ -77,20 +94,20 @@ const getUser = async (id, transform = true) => {
 }
 
 /**
- * d
- * @param {*} id d
- * @param {*} discordId d
+ * @param {string} id
+ * @param {string} discordId
  * @returns {NiddabotUser}
  */
 const getNiddabotUser = async (id, discordId) => {
   const user = ((discordId) ? await findUser(discordId) : await getUser(id)) || { discordId: discordId }
 
-  return Object.assign(new NiddabotUser(user), {
-    // Load Discord Info
-    discordUser: (user.tokenData) ? await discord.requestUser(user.tokenData.accessToken, undefined) : await discord.requestUser(undefined, discordId || user.discordId),
-    // Transform and Load Niddabot Rank
-    niddabotRank: (user.niddabotRank) ? await ranks.getRankById(user.niddabotRank.rankId) : undefined
-  })
+  const createdUser = new NiddabotUser(user)
+  // Load Discord Info
+  createdUser.discordUser = (user.tokenData) ? await discord.requestUser(user.tokenData.accessToken, undefined) || await discord.requestUser(undefined, discordId || user.discordId) : await discord.requestUser(undefined, discordId || user.discordId)
+  // Transform and Load Niddabot Rank
+  createdUser.niddabotRank = (user.niddabotRank) ? await ranks.getRankById(user.niddabotRank.rankId) : undefined
+
+  return createdUser
 }
 
 const createUser = data => {
@@ -192,6 +209,7 @@ module.exports = {
   createUser: createUser,
   addUser: addUser,
   updateUserToken: updateUserToken,
+  revokeUserToken: revokeUserToken,
   getUser: getUser,
   findUser: findUser,
   getNiddabotUser: getNiddabotUser

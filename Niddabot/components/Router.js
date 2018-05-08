@@ -151,9 +151,18 @@ class Router {
    */
 
   /**
+   * Router module callback.
+   * @typedef routerCallback
+   * @type {function(string,string,string)}
+   * @param {string} route
+   * @param {string} msg
+   * @param {string} next
+   */
+
+  /**
    * Adds a module to Niddabot's middleware chain.
-   * @param {string|string[]} path The path that should trigger this module.
-   * @param {Function|Router} module The module. Either a function or another Router.
+   * @param {string|string[]|RegExp} path The path that should trigger this module.
+   * @param {routerCallback|Router} module The module. Either a function or another Router.
    * @param {moduleOptions} [options=undefined] Module Options.
    * @param {"mentioned"|"command"|"either"|"any"} [options.trigger] What should trigger this route. Default: 'either'
    * @param {"guild"|"private"|"any"} [options.type] What message type should trigger this route. Default: 'guild'

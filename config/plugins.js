@@ -44,9 +44,16 @@ module.exports = {
     mustRevalidate: true
   }),
   csurf: csurf({ cookie: false }), // we want to use csurf for protection against CSRF attacks. We also want to store the token in req.session as provided by express-session.
+  getLimiter: new RateLimit({
+    windowMs: 1000 * 30 * 1, // 30 seconds
+    max: 50, // Max 30 requests per 30 seconds.
+    delayMs: 0,
+    delayAfter: 0,
+    handler: function (req, res, next) { return next(new Error(429)) }
+  }),
   postLimiter: new RateLimit({
-    windowMs: 1000 * 60 * 1, // 1 minute
-    max: 30, // Max 30 requests per minute.
+    windowMs: 1000 * 30 * 1, // 30 seconds
+    max: 5, // Max 5 requests per 30 seconds.
     delayMs: 0,
     delayAfter: 0,
     handler: function (req, res, next) { return next(new Error(429)) }

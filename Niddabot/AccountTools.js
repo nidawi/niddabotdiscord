@@ -1,12 +1,8 @@
 // Account tools for handling user accounts.
-
 const NiddabotAccount = require('./structs/NiddabotAccount')
 const Account = require('../models/Schemas').account
-const User = require('../models/Schemas').user
-
 const helpers = require('../lib/schemaHelpers')
 const sanitize = require('mongo-sanitize')
-
 const users = require('./UserTools')
 const servers = require('./ServerTools')
 
@@ -46,8 +42,13 @@ const createAccount = (data, transform = true) => {
   })
 }
 const updateAccount = async (id, newData, transform = true) => {
-  const account = await Account.findByIdAndUpdate(id, newData)
-  return (transform) ? transformAccount(account) : account
+  if (!id || !newData) throw new Error('account update failed: mandatory parameters are missing.')
+  try {
+    const account = await Account.findByIdAndUpdate(id, newData, { runValidators: true })
+    return (transform) ? transformAccount(account) : account
+  } catch (err) {
+    throw err
+  }
 }
 /**
  * @param {*} name
@@ -147,14 +148,19 @@ const verifyDatabase = async (log = false) => {
 }
 
 /**
- * d
- * @param {*} id d
+ * @param {string} id Niddabot Account Id.
  * @returns {NiddabotAccount}
  */
 const getNiddabotAccount = async id => {
-  const nidAcc = new NiddabotAccount()
-  const acc = await fetchAccountById(id)
-  return Object.assign(nidAcc, acc)
+  const fetchedAccount = (Object.getOwnPropertyNames(id).indexOf('name') === -1) ? await fetchAccountById(id) : await getAccount(id.name, id.password)
+  if (!fetchAccount) return undefined
+  const account = new NiddabotAccount(fetchedAccount)
+
+  const user = await users.getNiddabotUser(fetchedAccount.discordUser, undefined)
+  account.discordUser = (user.exists) ? user : undefined
+  account.ownedServers = await Promise.all(fetchedAccount.ownedServers.map(a => servers.getNiddabotServer(a, undefined)))
+
+  return account
 }
 
 /**

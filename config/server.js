@@ -6,6 +6,8 @@ const bodyParser = require('body-parser')
 const plugins = require('./plugins')
 const http = require('http')
 
+const discord = require('../Niddabot/DiscordTools')
+
 const app = express()
 const server = http.createServer(app)
 
@@ -61,7 +63,8 @@ const createApp = () => {
 
   app.use(session)
 
-  // Apply rate limits to POSTs.
+  // Apply rate limits
+  app.get('*', plugins.getLimiter)
   app.post('*', plugins.postLimiter)
 
   app.use(plugins.cacheConfig)
@@ -70,9 +73,16 @@ const createApp = () => {
     app.use(express.static('public')) // Apply static last so that all protections are applied to static files.
   }
 
+  // Fetch mandatory data
+  app.use(async (req, res, next) => {
+    if (!req.session.author) req.session.author = await discord.requestUser(undefined, process.env.NIDDABOT_DEV_ID)
+    next()
+  })
+
   // Apply "custom" Middleware
   app.use((req, res, next) => {
     res.locals.discord = req.session.discord // Always include current discord session (this includes user data).
+    res.locals.author = req.session.author // Always include Author info.
     res.locals.flash = req.session.flash // Include flash message(s)
     res.locals.csrfToken = req.csrfToken() // Include a token to use for views.
     delete req.session.flash
@@ -105,6 +115,7 @@ const createServer = () => {
 module.exports = {
   createServer: createServer,
   refs: {
-    server: server
+    server: server,
+    app: app
   }
 }

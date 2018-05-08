@@ -11,47 +11,68 @@
   <h1>Account Details</h1>
   <hr>
   <p>These are the details that are currently stored about your account. Please note that not all details can be changed on this page. If you desire to change something that is not included here, please do not hesitate to contact support.</p>
-  <form method="POST" action="/signup">
+  <form method="POST" action="/user/update">
     <input type="hidden" name="_csrf" value="{{csrfToken}}">
     <div class="details-wrapper">
       <fieldset>
-        <input type="text" name="name" placeholder="Account Name" value="{{discord.name}}" readonly>
+        <div class="fielditem">
+          <label>Account name (cannot be edited): </label>
+          <input type="text" placeholder="Account Name" value="{{discord.name}}" title="This is your account name. It cannot be changed." readonly>
+        </div>
+        <div class="fielditem">
+          <label>Nationality:</label>
+          {{>countrylist}}
+        </div>
+      </fieldset>
+      <fieldset>
+        <label>E-mail address:</label>
         <input type="text" name="email" placeholder="E-mail Address" value="{{discord.email}}">
       </fieldset>
       <fieldset>
-        <input type="password" name="password" placeholder="Current password" value="">
-        <input type="password" name="password" placeholder="New password" value="">
+        <label>Password:</label>
+        <input type="password" name="currentPassword" placeholder="Current password" value="">
+        <input type="password" name="newPassword" placeholder="New password" value="">
       </fieldset>
-
     </div>
     <div class="terms-wrapper">
-
-
-
-
-      <ul>
-
-        <li><label><input type="checkbox" name="emailsChecked" checked>I agree to being contacted through e-mail (outside of critical issues).</label></li>
-        <li><label><input type="checkbox" name="termsChecked">I agree to Niddabot's <a href="">Terms of Service</a>.</label></li>
-      </ul>
+      <fieldset>
+        <label>Other:</label>
+        <ul>
+          <li><label><input type="checkbox" name="emailsChecked" {{#if discord.receiveEmails}}checked{{/if}}>I accept receiving e-mails.</label></li>
+        </ul>
+      </fieldset>
     </div>
     <div class="submit-wrapper">
-      <input type="submit" class="confirm" value="Save changes">
+      <input type="submit" class="confirm" value="Save changes" disabled>
     </div>
   </form>
   <hr>
   <h1>Discord Details</h1>
   <hr>
-  {{#if discord._user.discordUser}}
-    <img src="{{discord._avatar}}">
-    <p>You have the following Discord User associated with your account: {{discord._user.discordUser.username}}#{{discord._user.discordUser.discriminator}}. While on a Discord server, Niddabot will treat you as a <i>{{discord._user.niddabotRank.name}}</i>.</p>
-    <p>Your Access Token {{discord._token}} {{#if discord._validToken}}<a href="/user/refresh">refresh</a>{{/if}}</p>
+  {{#if discord.discordUser}}
+    <p>You have the following Discord User associated with your account: {{discord.discordUser.discordUser.username}}#{{discord.discordUser.discordUser.discriminator}}. While on a Discord server, Niddabot will treat you as a <i>{{discord.discordUser.niddabotRank.name}}</i>.</p>
+    {{#if discord.discordUser.hasValidToken}}
+      <p>You have granted Niddabot an Access Token and it {{discord._token}}
+      You can manually refresh your Access Token by clicking <a href="/user/refresh">here</a>.
+      If you no longer want Niddabot to have an Access Token to your account, you can click <a href="/user/revoke">here</a> to revoke it.
+      </p>
+    {{else}}
+      <p>You have not granted Niddabot an Access Token.</p>
+    {{/if}}
   {{else}}
     <p>You have not yet registered a Discord User. You can <i>ascend</i> at any time by going <a href="http://localhost:3000/user/ascend">here</a>!</p>
   {{/if}}
   <hr>
   <h1>Your Servers</h1>
   <hr>
-  <p>Your account is associated with the following Discord Guilds where Niddabot currently operates:</p>
-  {{discord.ownedServers}}
+  {{#if discord.ownedServers}}
+    <p>This is a list of the Discord Guilds with which your account is associated. Association means that you are authorized to edit settings for that particular guild. Currently, this is readonly, but other options will be added at a later date.</p>
+    <ul class="view-list">
+      {{#each discord.ownedServers as |server|}}
+        <li><img src="{{server.guild.icon}}">{{server.guild.name}}</li>
+      {{/each}}
+    </ul>
+  {{else}}
+    <p>You have no Discord Guilds associated to your account. You can have Niddabot join your Guild at any time by going <a href="http://localhost:3000/user/ascend">here</a>!</p>
+  {{/if}}
 </div>

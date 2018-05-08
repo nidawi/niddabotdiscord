@@ -2,6 +2,7 @@
   Theme: rgb(31, 30, 29);
   Highlight: rgb(0, 86, 125);
   White: rgb(217, 217, 214);
+  Highlight2: rgb(34, 189, 236);
 */
 
 /* OVERWRITES */
@@ -16,6 +17,7 @@
 
 .narrow-view hr {
   border-color: rgb(0, 86, 125);
+  margin: 5px 0 5px 0;
 }
 .narrow-view h1 {
   text-align: center;
@@ -23,9 +25,9 @@
   margin: 0 0 15px 0;
 }
 .narrow-view p {
-  color: rgb(217, 217, 214);
-  font-size: 20px;
-  margin: 15px 0 15px 0;
+  color: rgb(217, 217, 214) !important;
+  font-size: 20px !important;
+  margin: 15px 0 15px 0 !important;
 }
 
 .narrow-view .narrow-heading {
@@ -75,6 +77,11 @@ form .details-wrapper input[type=text], form .details-wrapper input[type=passwor
   padding: 5px;
   font-size: 22px;
 }
+
+form input[type=text]:read-only, form input[type=password]:read-only {
+  color: grey;
+}
+
 form .details-wrapper select {
   width: 100%;
 }
@@ -86,14 +93,22 @@ form .details-wrapper input[type=text]:focus, form .details-wrapper input[type=p
   box-shadow: 0 0 10px rgb(0, 86, 125);
 }
 
+p {
+  text-align: justify;
+  text-justify: inter-word;
+  line-height: 28px;
+}
 
 form .terms-wrapper {
   margin: 20px 0 20px 0;
 }
-form .terms-wrapper ul, li {
+form .terms-wrapper ul, form .terms-wrapper li {
   list-style: none;
   margin: 0;
   padding: 0;
+}
+form .terms-wrapper ul {
+  margin-top: 5px;
 }
 form .terms-wrapper li:not(:last-child) {
   margin: 0px 0 6px 0;
@@ -103,7 +118,7 @@ form .terms-wrapper input[type=checkbox] {
 }
 
 .submit-wrapper {
-  margin: 10px 0 10px 0;
+  margin: 30px 0 10px 0;
 }
 .submit-wrapper *:not(:last-child) {
   margin: 0px 0 12px 0;
@@ -116,9 +131,13 @@ form .terms-wrapper input[type=checkbox] {
   height: 40px;
   font-weight: bold;
 }
-.submit-wrapper input[type=submit]:hover {
+.submit-wrapper input[type=submit]:hover:enabled {
   filter: brightness(120%);
 }
+.submit-wrapper input[type=submit]:disabled {
+  background: rgb(7, 71, 100);
+}
+
 .submit-wrapper .confirm {
   border: 1px solid rgb(31, 30, 29);
   background: rgb(15, 150, 212);
@@ -136,8 +155,75 @@ form .terms-wrapper input[type=checkbox] {
 }
 
 form fieldset {
+  display: inline-block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
   border: none;
 }
+form fieldset .fielditem {
+  display: inline-block;
+  width: calc(50% - 4px);
+}
+form fieldset label {
+  display: block;
+  width: calc(100%);
+}
 form fieldset input[type=text], form fieldset input[type=password] {
-  width: calc(50% - 20px) !important;
+  display: block;
+  width: calc(100%);
+}
+
+.view-list * {
+  transition: all 0.30s ease-in-out;
+  outline: none;
+}
+.view-list, .view-list li {
+  display: block;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 22px;
+}
+.view-list li {
+  padding: 8px;
+  border: 1px solid rgb(105, 105, 105);
+}
+.view-list li:hover {
+  border: 1px solid rgb(217, 217, 214);
+}
+.view-list li img {
+  display: block;
+  position: relative;
+  margin: -6px -6px -6px 0;
+  height: 38px;
+  float: right;
+}
+.view-list *:nth-child(even) {
+  background: rgb(0, 86, 125);
+}
+.view-list *:nth-child(odd) {
+  background: rgb(31, 30, 29);
+}
+.view-list *:hover {
+  filter: brightness(1.1);
+}
+
+.view-img {
+  position: relative;
+}
+
+blockquote {
+  font-size: 19px;
+  text-align: justify;
+  text-justify: inter-word;
+  line-height: 28px;
+  margin: 0;
+  font-style: italic;
+  width: 95%;
+}
+.noticeme {
+  text-align: center;
+  font-size: 21px;
+  color: rgb(34, 189, 236);
 }

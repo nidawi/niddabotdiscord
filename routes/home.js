@@ -51,23 +51,17 @@ router.route('/signin')
     // Allows a user to sign in with a Niddabot Account.
     try {
       // Try to fetch an account.
-      const fetchedAccount = await account.getAccount(req.body.name, req.body.password)
+      const fetchedAccount = await account.getNiddabotAccount({ name: req.body.name, password: req.body.password })
       if (!fetchedAccount) return next(new Error(400))
-      // Try to fetch the user.
-      const fetchedUser = await users.getNiddabotUser(fetchedAccount.discordUser, undefined)
       // Now we add the user information to the current session
-      req.session.regenerate((err) => {
+      req.session.regenerate(err => {
         if (err) return next(new Error(500))
         req.session.discord = fetchedAccount
-        if (fetchedUser) {
-          req.session.discord._user = fetchedUser
-          req.session.discord._avatar = fetchedUser.avatar
-          req.session.discord._validToken = fetchedUser.hasValidToken
-          req.session.discord._token = fetchedUser.getToken()
+        if (fetchedAccount.discordUser) {
+          req.session.discord._token = fetchedAccount.discordUser.getToken()
         }
 
         req.session.flash = { messages: [{ type: 'success', message: `Welcome ${fetchedAccount.name}!` }] }
-        if (!req.session.discord.discordUser) req.session.flash.messages.push({ type: 'notification', message: 'You have not yet authenticated Niddabot. It is recommended that you do so at your earliest convenience to get the most out of Niddabot!' })
         return res.redirect('/')
       })
     } catch (err) {
@@ -88,9 +82,12 @@ router.route('/signout')
   })
 
 router.route('/about')
-  .get((req, res, next) => {
-    // Render the about page.
-    return res.render('home/about')
-  })
+  .get((req, res, next) => res.render('home/about'))
+router.route('/support')
+  .get((req, res, next) => res.render('home/support'))
+router.route('/status')
+  .get((req, res, next) => res.render('home/status'))
+router.route('/official')
+  .get((req, res, next) => res.render('home/official'))
 
 module.exports = router

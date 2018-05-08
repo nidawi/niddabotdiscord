@@ -13,26 +13,99 @@ router.route('*')
     if (!req.session.discord) next(new Error(401))
     else next()
   })
+router.route('*')
+  .all(async (req, res, next) => {
+    // Fetch the account to use here.
+    const fetchedAccount = await accounts.getNiddabotAccount(req.session.discord.id)
+    if (!fetchedAccount.exists) return next(new Error(404))
+    req.discord = fetchedAccount
+    req.session.discord = fetchedAccount
+    if (fetchedAccount.discordUser) {
+      req.session.discord._token = fetchedAccount.discordUser.getToken()
+    }
+    res.locals.discord = req.session.discord
+    next()
+  })
 
 router.route('/')
   .get(async (req, res, next) => {
-    // Refresh the user's Discord User & Account.
-    const fetchedAccount = await accounts.fetchAccountById(req.session.discord.id)
-    if (!fetchedAccount) return next(new Error(500))
-    const fetchedUser = await users.getNiddabotUser(fetchedAccount.discordUser, undefined)
-    req.session.discord = fetchedAccount
-    if (fetchedUser) {
-      req.session.discord._user = fetchedUser
-      req.session.discord._avatar = fetchedUser.avatar
-      req.session.discord._validToken = fetchedUser.hasValidToken
-      req.session.discord._token = fetchedUser.getToken()
-    }
-    return res.render('user')
+    res.render('user')
   })
 
-router.route('/servers')
+router.route('/refresh')
   .get(async (req, res, next) => {
-    return res.send(await Promise.all(req.session.discord.ownedServers.map(a => { return servers.fetchServer(a) })))
+    try {
+      // Fetch the account.
+      const account = req.discord
+      if (account.discordUser.exists && account.discordUser.hasValidToken) {
+        const newToken = await account.discordUser.refreshToken()
+        if (newToken) {
+          req.session.flash = { type: 'success', message: `Your Access Token was refreshed successfully.` }
+          return res.redirect('/user')
+        } else {
+          req.session.flash = { type: 'error', message: `Access Token refresh was unsuccessful.` }
+          return res.redirect('/')
+        }
+      }
+      return next(new Error(403))
+    } catch (error) {
+      req.session.flash = { type: 'error', message: `Access Token refresh was unsuccessful.` }
+      return res.redirect('/')
+    }
+  })
+
+router.route('/revoke')
+  .get(async (req, res, next) => {
+    try {
+      // Fetch the account.
+      const account = req.discord
+      if (account.discordUser.exists && account.discordUser.hasValidToken) {
+        const tokenRevoked = await account.discordUser.revokeToken()
+        if (tokenRevoked) {
+          req.session.flash = { type: 'success', message: `Your Access Token has been revoked successfully.` }
+          return res.redirect('/user')
+        } else {
+          req.session.flash = { type: 'error', message: `The request to revoke your Access Token was unsuccessful.` }
+          return res.redirect('/')
+        }
+      }
+      return next(new Error(403))
+    } catch (error) {
+      req.session.flash = { type: 'error', message: `The request to revoke your Access Token was unsuccessful.` }
+      return res.redirect('/')
+    }
+  })
+
+router.route('/update')
+  .post(async (req, res, next) => {
+    // Updates an account with new information.
+    try {
+      const account = await accounts.fetchAccountById(req.discord.id, false)
+      if (req.body.newPassword && !(await account.comparePasswords(req.body.currentPassword))) throw new Error('Password does not match the current password.')
+
+      const newData = {
+        email: req.body.email,
+        nationality: (req.body.country === 'Select country') ? undefined : req.body.country,
+        receiveEmails: req.body.emailsChecked === 'on',
+        pass: req.body.newPassword
+      }
+      if (!newData.email || newData.email === account.email) delete newData.email
+      if (!newData.nationality || newData.nationality === account.nationality) delete newData.nationality
+      if (!newData.receiveEmails || newData.receiveEmails === account.receiveEmails) delete newData.receiveEmails
+      if (!newData.pass || await account.comparePasswords(newData.pass)) delete newData.pass
+
+      if (Object.getOwnPropertyNames(newData).length > 0) {
+        await accounts.updateAccount(req.session.discord.id, newData)
+        req.session.flash = { type: 'success', message: `Account information updated successfully!` }
+        return res.redirect('/user')
+      } else {
+        req.session.flash = { type: 'notification', message: `No changes to commit. Request discarded.` }
+        return res.redirect('/user')
+      }
+    } catch (error) {
+      req.session.flash = { type: 'error', messages: error.errors, message: error.message }
+      return res.redirect('/user')
+    }
   })
 
 router.route('/ascend')

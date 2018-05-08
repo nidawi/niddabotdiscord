@@ -125,6 +125,10 @@ class NiddabotUser {
      */
     this.avatar = undefined
     /**
+     * @type {boolean}
+     */
+    this.hasToken = undefined
+    /**
      * The amount of days remaining of this token's validity.
      * @type {number}
      */
@@ -134,6 +138,11 @@ class NiddabotUser {
      * @type {boolean}
      */
     this.hasValidToken = undefined
+    /**
+     * Gets the user's full name (if available). Username#discriminator
+     * @type {string}
+     */
+    this.fullName = undefined
 
     Object.defineProperty(this, 'exists', {
       get: () => { return (this.discordId && this.discordUser) }
@@ -144,11 +153,17 @@ class NiddabotUser {
     Object.defineProperty(this, 'avatar', {
       get: () => { return (this.exists) ? `https://cdn.discordapp.com/avatars/${this.discordUser.discordId}/${this.discordUser.avatar}` : undefined }
     })
+    Object.defineProperty(this, 'hasToken', {
+      get: () => { return (this.tokenData && this.tokenData.accessToken) }
+    })
     Object.defineProperty(this, 'tokenDaysLeft', {
-      get: () => { return (this.tokenData) ? Math.round((this.tokenData.expiresAt - new Date()) / 1000 / 60 / 60 / 24) : undefined }
+      get: () => { return (this.hasToken) ? Math.round((this.tokenData.expiresAt - new Date()) / 1000 / 60 / 60 / 24) : undefined }
     })
     Object.defineProperty(this, 'hasValidToken', {
-      get: () => { return (this.tokenData && this.tokenDaysLeft > 0) }
+      get: () => { return (this.hasToken && this.tokenDaysLeft > 0) }
+    })
+    Object.defineProperty(this, 'fullName', {
+      get: () => { return (this.exists) ? `${this.discordUser.username}#${this.discordUser.discriminator}` : undefined }
     })
   }
 
@@ -161,12 +176,31 @@ class NiddabotUser {
    * @memberof NiddabotUser
    */
   async refreshToken () {
-    if (!this.tokenData) throw new Error('you do not have a token to refresh.')
+    if (!this.hasValidToken) throw new Error('you do not have an Access Token to refresh.')
     const newToken = (await require('../UserTools').updateUserToken(this.id)).tokenData
     if (newToken) {
       this.tokenData = newToken
       return newToken
-    } else throw new Error('operation failed.')
+    } else throw new Error('token refresh unsuccessful.')
+  }
+  /**
+   * Requests a token revoke and returns true if successful.
+   * @returns {boolean}
+   * @async
+   * @memberof NiddabotUser
+   */
+  async revokeToken () {
+    if (!this.hasValidToken) throw new Error('you do not have an Access Token to revoke.')
+    const revokedToken = await require('../UserTools').revokeUserToken(this.id)
+    if (revokedToken) {
+      delete this.tokenData
+      return true
+    } else throw new Error('token revoke unsuccessful.')
+  }
+  async testToken () {
+    if (!this.hasValidToken) throw new Error('you do not have an Access Token.')
+    const tokenValid = await require('../DiscordTools').testToken(this.tokenData.accessToken)
+    return tokenValid
   }
   outranks (targetPrivilege) {
     return this.getPrivilege() > targetPrivilege

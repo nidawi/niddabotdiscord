@@ -90,10 +90,9 @@ const createRequestBody = (tokenOrCode, refresh = false) => {
   })
 }
 /**
- * d
- * @param {*} url d
- * @param {*} options d
- * @returns {*}
+ * @param {string} url
+ * @param {request} options
+ * @returns {{ status: number, data: *}}
  */
 const discordRequest = async (url, options) => {
   // Performs a complex request that can be customized as needed. There will be several "quick & dirty" request methods as well.
@@ -113,7 +112,7 @@ const discordRequest = async (url, options) => {
     const response = await request(fetchOptions)
     // If the request is successful.
     if (Math.floor(response.statusCode / 100) === 2) {
-      return { status: response.statusCode, data: (response.statusCode !== 204) ? JSON.parse(response.body) : undefined }
+      return { status: response.statusCode, data: (response.statusCode !== 204 && response.body) ? JSON.parse(response.body) : undefined }
     } else { // If it is unsuccessful.
       return { status: response.statusCode, data: response.body }
     }
@@ -123,8 +122,7 @@ const discordRequest = async (url, options) => {
   }
 }
 /**
- * d
- * @param {*} data d
+ * @param {*} data
  * @returns {TokenData}
  */
 const parseToken = data => {
@@ -138,8 +136,7 @@ const parseToken = data => {
   }
 }
 /**
- * d
- * @param {string} code d
+ * @param {string} code
  * @returns {TokenData}
  */
 const requestToken = async code => {
@@ -152,18 +149,18 @@ const requestToken = async code => {
 
   try {
     const response = await discordRequest(discordURLs.tokenURL, requestData)
-    return parseToken(response.data)
+    if (response && response.status === 200) return parseToken(response.data)
+    else return undefined
   } catch (err) {
     return undefined
   }
 }
 /**
- * d
  * @param {string} refreshToken The Refresh Token.
  * @returns {TokenData}
  */
 const refreshToken = async refreshToken => {
-  if (!refreshToken) throw new Error('No refresh token provided.')
+  if (!refreshToken) throw new Error('no refresh token provided.')
   const requestData = {
     method: 'POST',
     formData: createRequestBody(refreshToken, true)
@@ -171,15 +168,44 @@ const refreshToken = async refreshToken => {
 
   try {
     const response = await discordRequest(discordURLs.tokenURL, requestData)
-    return parseToken(response.data)
+    if (response && response.status === 200) return parseToken(response.data)
+    else return undefined
   } catch (err) {
     return undefined
   }
 }
 
+/**
+ * @param {string} token
+ * @returns {boolean}
+ */
+const revokeToken = async token => {
+  if (!token) throw new Error('no token provided.')
+  const requestData = {
+    method: 'POST',
+    formData: {
+      'token': token
+    }
+  }
+  try {
+    const response = await discordRequest(discordURLs.revokeURL, requestData)
+    if (response && response.status === 200) return true
+    else return false
+  } catch (err) {
+    return false
+  }
+}
 
-
-
+/**
+ * Tests the provided token. Attempts to fetch user information. If the requested information is received, returns true since the token works. Otherwise false.
+ * @param {string} token
+ * @returns {boolean}
+ */
+const testToken = async token => {
+  const response = await requestUser(token)
+  if (response) return true
+  else return false
+}
 
 /**
  * @typedef TokenData
@@ -365,6 +391,8 @@ module.exports = {
   requestSelf: requestSelf,
   requestToken: requestToken,
   refreshToken: refreshToken,
+  revokeToken: revokeToken,
+  testToken: testToken,
   requestUser: requestUser,
   requestGuild: requestGuild,
   requestChannels: requestChannels,

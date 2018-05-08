@@ -3,16 +3,16 @@
     {{#each flash.messages as |error|}}
       <div class="flashmsg flashmsg-{{error.type}}">
         <div class="view-wrapper">
-          <div class="text">{{error.message}}</div>
-          <div class="box"><button class="flashmsg-{{error.type}}" title="Close Notification">X</button></div>
+          <p>{{error.message}}</p>
+          <button class="flashmsg-{{error.type}}" title="Close Notification">X</button>
         </div>
       </div>
     {{/each}}
   {{else}}
     <div class="flashmsg flashmsg-{{flash.type}}">
       <div class="view-wrapper">
-        <div class="text">{{flash.message}}</div>
-        <div class="box"><button class="flashmsg-{{flash.type}}" title="Close Notification">X</button></div>
+        <p>{{flash.message}}</p>
+        <button class="flashmsg-{{flash.type}}" title="Close Notification">X</button>
       </div>
     </div>
   {{/if}}

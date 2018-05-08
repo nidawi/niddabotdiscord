@@ -10,21 +10,45 @@
 <hr>
 <h1>Get Niddabot!</h1>
 <hr>
+<div class="noticeBox">
+  Please note that this application is provided "as is", with no guarantees or warrenties provided of any kind. In no event shall the author be liable for any claim, damage, or otherwise arising from, out of, or in connection with the application or its use.
+</div>
 <p>
-  Here you can make Niddabot join your Discord server! However, she will need a few permissions from you first to do so. Below is a list of permissions that Niddabot requires to properly:
-  <ul>
-    <li>
-      A server for Niddabot to join.
-      <blockquote>You need to have the <b>Manage Server</b> permission to do this. Without a server you can still enjoy Niddabot's personal features by contacting her directly through DMs.</blockquote>
-      <blockquote>You also need to provide Niddabot with <b>Administrator</b> privileges on the server for her to function properly. While this is, strictly speaking, optional, it is strongly recommended to
-      grant her this permission as it will ensure that all of her features function properly. She will, naturally, not abuse the power that you bestow upon her. That's just not who she is.</blockquote>
-    </li>
-    <li>
-      Access to your username, avatar, and e-mail address.
-      <blockquote>This is used to identify you as a server owner (and as a Discord User in general, too!). It also automatically creates a Niddabot User Account for you with admin rights! Neat! <i>Knowledge of your e-mail address is used for special occasions (such as in the case of disputes). It will not be used for anything else, nor will it overwrite the e-mail you provided for your Niddabot account or your e-mail settings.</i></blockquote>
-    </li>
-  </ul>
+  On this page, you can either get Niddabot to join one of your Discord Servers or authenticate (give her an Access Token) Niddabot to gain access to certain information about your Discord Account to offer you a better quality of service.
+  You can visit your account page and revoke this token at any time. She will still function, but she will not be able to assist you to her full potential.
+  Note that if you want Niddabot on your server, you will also be required to authenticate her. When you authenticate Niddabot, she will ask for permission to access the following about your account (this is subject to change):
 </p>
+<ul>
+  <li>
+    <p>Access to your username and avatar.</p>
+    <blockquote>
+      This is always granted by default.
+    </blockquote>
+  </li>
+  <li>
+    <p>Access to your E-mail address.</p>
+    <blockquote>
+      Your Niddabot Account e-mail address will not be overwritten, and the e-mail received will only be used in rare cases, such as disputes, or when requested by Discord. Note that Niddabot does not save the e-mail address anywhere.
+      Instead, she only fetches it from Discord's servers if, and when, she needs it. This guarantees that it is kept away from the clutches of the undesirables.
+    </blockquote>
+  </li>
+</ul>
+<p>
+  If you want Niddabot to join your server, there are a few more things that you will need to consider. First of all, you need a Server for her to join (<i>duh</i>), but you also need to have the <i>Manage Server</i> permission on that Server.
+  If you do not, Niddabot won't join. You will still be able to Authenticate normally and use her personal features (through DMs) anyway, though! When you add Niddabot, in addition to the standard Authentication described above, she will also
+  ask for the following:
+</p>
+<ul>
+  <li>
+    <p>Server Administration Role</p>
+    <blockquote>
+      Niddabot will ask you to create a role on the server with the <b>administrator</b> privilege (the authentication process does this automatically if you allow it). While granting her administration privileges is
+      optional and can at any time be revoked, it is strongly recommended to grant her this privilege as it will guarantee that all of her features function as intended. As an example, without the appropriate privileges,
+      several of Niddabot's features will be unavailable, such as message purging and chat moderation, amongst others. She will naturally not abuse her powers, as she knows that with great power, comes great responsibility.
+    </blockquote>
+  </li>
+</ul>
+
 <form action="/auth/guild" method="POST">
   <input type="hidden" name="_csrf" value="{{csrfToken}}">
   <p>That's all! So, what are you waiting for? Get Niddabot now and enjoy your <i>ascension</i>!</p>

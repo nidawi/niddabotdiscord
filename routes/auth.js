@@ -12,7 +12,7 @@ const user = require('../Niddabot/UserTools')
 router.route('*')
   .all((req, res, next) => {
     // If you're not signed in, nothing here should work.
-    if (!req.session.discord || !req.session.discord.account) next(new Error(401))
+    if (!req.session.discord) next(new Error(401))
     else next()
   })
 
@@ -27,8 +27,8 @@ router.route('/')
     }
     if (!req.session.state || req.query.state !== req.session.state) {
       // If the states are not the same, terminate the request.
-      // req.session.flash = { type: 'error', message: `Invalid session!` }
-      // return res.status(400).redirect('/')
+      req.session.flash = { type: 'error', message: `Invalid session!` }
+      return res.status(400).redirect('/')
     }
 
     try {
@@ -38,28 +38,39 @@ router.route('/')
         req.session.flash = { type: 'error', message: `Token Exchange failed. Please try again.` }
         return res.status(500).redirect('/')
       }
-      console.log('tokenData DONE')
-      // Register the server.
-      // --> Server doesn't get created!
-      const requestedServer = await server.addServer(req.query.guild_id, req.session.discord.account.id)
-      console.log('requestedServer DONE', requestedServer)
 
       // Create a user. Whenever an account adds a server, they will also be added as a Niddabot User. If they already exist, the User Account will be edited.
-      const discordUser = await user.addUser(undefined, req.session.discord.account.id, undefined, tokenData)
-      console.log('discordUser DONE')
+      const discordUser = await user.addUser(undefined, req.session.discord.id, undefined, tokenData)
+      if (!discordUser) {
+        req.session.flash = { type: 'error', message: `Failed to create a new User Account. Please try again.` }
+        return res.status(500).redirect('/')
+      }
+
+      let requestedServer
+      // Server stuff. Only relevant if the user is making Niddabot join their server.
+      if (req.query.guild_id) {
+        requestedServer = await server.addServer(req.query.guild_id, req.session.discord.id)
+        if (!requestedServer) {
+          req.session.flash = { type: 'error', message: `Failed to process the Discord Guild. Please try again.` }
+          return res.status(500).redirect('/')
+        }
+      }
 
       // Update the current user's account.
-      // --> Doesn't actually update the session!
-      req.session.discord.account = await account.updateAccount(req.session.discord.account.id, {
+      await account.updateAccount(req.session.discord.id, {
         discordUser: discordUser.id,
-        ownedServers: (!requestedServer) ? req.session.discord.account.ownedServers : [...req.session.discord.account.ownedServers, requestedServer.id]
+        ownedServers: (!requestedServer) ? req.session.discord.ownedServerIds : [...req.session.discord.ownedServerIds, requestedServer.id]
       })
-      console.log('accountUPDATE DONE')
+
+      // Update Session
+      const fetchedAccount = await account.getNiddabotAccount(req.session.discord.id)
+      if (!fetchedAccount.exists) return next(new Error(500))
+      req.session.discord = fetchedAccount
 
       req.session.flash = { type: 'success', message: `Niddabot has been authenticated! Yay!` }
-      return res.status(200).redirect('/')
+      return res.status(200).redirect('/user')
     } catch (err) {
-      console.log(err.message)
+      console.log(err.stack)
       return next(err)
     }
   })

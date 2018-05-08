@@ -65,7 +65,6 @@ class DiscordGuild {
     this.verificationLevel = guild.verification_level
     this.embedsEnabled = guild.embed_enabled
     this.id = guild.id
-    this.icon = guild.icon
     /**
      * @type {Collection}
      */
@@ -78,6 +77,21 @@ class DiscordGuild {
      * @type {UserData}
      */
     this.owner = guild.owner_id
+    /**
+     * @type {string}
+     */
+    this.icon = undefined
+    /**
+     * @type {boolean}
+     */
+    this.exists = undefined
+
+    Object.defineProperty(this, 'exists', {
+      get: () => { return (this.name && this.owner) }
+    })
+    Object.defineProperty(this, 'icon', {
+      get: () => { return (this.exists) ? `https://cdn.discordapp.com/icons/${this.id}/${guild.icon}` : undefined }
+    })
   }
   /**
    * Returns a string representation of this guild.
