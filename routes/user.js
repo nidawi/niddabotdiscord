@@ -4,8 +4,6 @@ const express = require('express')
 const router = express.Router()
 
 const accounts = require('../Niddabot/AccountTools')
-const users = require('../Niddabot/UserTools')
-const servers = require('../Niddabot/ServerTools')
 
 router.route('*')
   .all((req, res, next) => {
@@ -15,16 +13,20 @@ router.route('*')
   })
 router.route('*')
   .all(async (req, res, next) => {
-    // Fetch the account to use here.
-    const fetchedAccount = await accounts.getNiddabotAccount(req.session.discord.id)
-    if (!fetchedAccount.exists) return next(new Error(404))
-    req.discord = fetchedAccount
-    req.session.discord = fetchedAccount
-    if (fetchedAccount.discordUser) {
-      req.session.discord._token = fetchedAccount.discordUser.getToken()
+    try {
+      // Fetch the account to use here.
+      const fetchedAccount = await accounts.getNiddabotAccount(req.session.discord.id)
+      if (!fetchedAccount.exists) return next(new Error(404))
+      req.discord = fetchedAccount
+      req.session.discord = fetchedAccount
+      if (fetchedAccount.discordUser) {
+        req.session.discord._token = fetchedAccount.discordUser.getToken()
+      }
+      res.locals.discord = req.session.discord
+      return next()
+    } catch (err) {
+      return next(err)
     }
-    res.locals.discord = req.session.discord
-    next()
   })
 
 router.route('/')
