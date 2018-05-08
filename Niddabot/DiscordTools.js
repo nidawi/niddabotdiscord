@@ -122,12 +122,12 @@ const discordRequest = async (url, options) => {
       return { status: response.statusCode, data: (response.statusCode !== 204 && response.body) ? JSON.parse(response.body) : undefined }
     } else { // If it is unsuccessful.
       if (response.statusCode === 429) {
+        const resp = JSON.parse(response.body)
         // If we get rate-limited, we wait for the specified amount of time and then try again.
         // This is not a great solution but it will have to do for now. I'll need to refactor some calls.
         // We're making way too many calls right now.
-        console.log(`Discord Rate-limit reached. Global Limit: ${response.body['global']}, Retry after: ${response.body['retry_after']}\n` +
-        `Response: ${response.body}`)
-        await wait(response.body['retry_after'] || 500)
+        console.log(`Discord Rate-limit reached. Global Limit: ${resp.global}, Retry after: ${resp.retry_after}`)
+        await wait(resp.retry_after || 500)
         return discordRequest(url, options)
       } else {
         return { status: response.statusCode, data: response.body }
