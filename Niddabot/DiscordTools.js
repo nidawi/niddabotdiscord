@@ -328,13 +328,18 @@ const convertApplicationObject = data => {
  */
 const requestSelf = async () => {
   // Request information about self in parallel for speed purposes.
-  const appData = await Promise.all([
-    discordRequest('oauth2/applications/@me'),
-    discordRequest('users/@me')
-  ])
-  return {
-    applicationData: convertApplicationObject(appData[0].data),
-    accountData: convertUserObject(appData[1].data)
+  try {
+    const appData = await Promise.all([
+      discordRequest('oauth2/applications/@me'),
+      discordRequest('users/@me')
+    ])
+    return {
+      applicationData: convertApplicationObject(appData[0].data),
+      accountData: convertUserObject(appData[1].data)
+    }
+  } catch (err) {
+    console.log('Failed to perform "requestSelf". Error: ', err.messages)
+    return undefined
   }
 }
 

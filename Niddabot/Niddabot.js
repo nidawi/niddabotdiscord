@@ -54,6 +54,7 @@ class Niddabot {
           DiscordTools.requestSelf(),
           DiscordTools.requestGuild(process.env.NIDDABOT_HOME_ID)
         ])
+        console.log(requiredData)
         niddabotSession.application = requiredData[0].applicationData
         niddabotSession.user = requiredData[0].accountData
         niddabotSession.home = requiredData[1]
