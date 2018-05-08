@@ -118,6 +118,9 @@ const getAccount = async (name, password) => {
   } // We don't want to expose mongo errors.
   throw new Error('No account found for that Account Name/password combination.') // No error and no user, that means no user was found for the combo.
 }
+/**
+ * @returns {UnpopulatedAccount}
+ */
 const verifyDatabase = async (log = false) => {
   const accounts = await Account.find()
   const adminAccount = await fetchAccount('nidawi', false) // Check if Admin account exists.
@@ -135,7 +138,7 @@ const verifyDatabase = async (log = false) => {
         receiveEmails: true
       })
       if (log) console.log('Admin Account created.')
-      return newAccount.id
+      return newAccount
     } catch (err) {
       if (log) console.log('Admin Account failed to create: ' + err.message)
       return undefined
@@ -143,7 +146,7 @@ const verifyDatabase = async (log = false) => {
   } else {
     if (log) console.log(`Admin Account exists. Name: ${adminAccount.name}, Id: ${adminAccount._id}, Created: ${adminAccount.createdAt}`)
     if (log) console.log(`Found a total of ${accounts.length} accounts.`)
-    return adminAccount.id
+    return adminAccount
   }
 }
 
@@ -158,6 +161,7 @@ const getNiddabotAccount = async id => {
 
   const user = await users.getNiddabotUser(fetchedAccount.discordUser, undefined)
   account.discordUser = (user.exists) ? user : undefined
+  // console.log('getNiddabotUser exists', JSON.stringify(user))
   account.ownedServers = await Promise.all(fetchedAccount.ownedServers.map(a => servers.getNiddabotServer(a, undefined)))
 
   return account

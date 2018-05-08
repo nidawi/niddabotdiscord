@@ -22,7 +22,7 @@ const rankSchema = new mongoose.Schema({
   updatedAt: { type: Date, required: true, default: Date.now }
 })
 rankSchema.plugin(uniqueValidator, { message: 'Rank already exists.' })
-rankSchema.pre('validate', helpers.verifyEditEligiblity)
+rankSchema.pre('findOneAndUpdate', helpers.verifyEditEligiblity)
 rankSchema.pre('remove', helpers.verifyDeleteEligiblity)
 rankSchema.post('findOneAndUpdate', helpers.parseError) // Upon save and update, parse potential errors.
 rankSchema.post('save', helpers.parseError)

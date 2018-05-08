@@ -89,6 +89,13 @@ const createRequestBody = (tokenOrCode, refresh = false) => {
     'code': tokenOrCode
   })
 }
+
+const wait = (delay) => {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => { resolve() }, delay)
+  })
+}
+
 /**
  * @param {string} url
  * @param {request} options
@@ -114,7 +121,15 @@ const discordRequest = async (url, options) => {
     if (Math.floor(response.statusCode / 100) === 2) {
       return { status: response.statusCode, data: (response.statusCode !== 204 && response.body) ? JSON.parse(response.body) : undefined }
     } else { // If it is unsuccessful.
-      return { status: response.statusCode, data: response.body }
+      if (response.statusCode === 429) {
+        // If we get rate-limited, we wait for the specified amount of time and then try again.
+        // This is not a great solution but it will have to do for now. I'll need to refactor some calls.
+        // We're making way too many calls right now.
+        await wait(response.body.retry_after)
+        return discordRequest(url, options)
+      } else {
+        return { status: response.statusCode, data: response.body }
+      }
     }
   } catch (err) {
     console.log(err)
@@ -253,7 +268,9 @@ const requestUser = async (accessToken, discordId) => {
   const response = await discordRequest((accessToken) ? 'users/@me' : `users/${discordId}`, requestOptions)
   if (response && response.status === 200) {
     return convertUserObject(response.data)
-  } else return undefined
+  } else {
+    return undefined
+  }
 }
 
 /**

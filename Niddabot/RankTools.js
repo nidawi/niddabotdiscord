@@ -49,6 +49,7 @@ const createDefault = async log => {
     if (log) console.log('Default ranks have been created.')
   } catch (err) {
     if (log) console.log('Default ranks failed to create: ' + err.message)
+    throw new Error('Default ranks failed to create: ' + err.message)
   }
 }
 const clearRanks = async log => {
@@ -57,6 +58,7 @@ const clearRanks = async log => {
     if (log) console.log('Cleared all ranks.')
   } catch (err) {
     if (log) console.log('Failed to clear ranks: ' + err.message)
+    throw new Error('Failed to clear ranks: ' + err.message)
   }
 }
 /**
@@ -79,9 +81,8 @@ const getRank = async (name, transform = true) => {
   return (transform) ? transformRank(rank) : rank
 }
 /**
- * d
- * @param {*} id d
- * @param {*} transform d
+ * @param {string} id
+ * @param {*} transform
 * @returns {RankData}
  */
 const getRankById = async (id, transform = true) => {

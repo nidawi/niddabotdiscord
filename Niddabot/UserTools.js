@@ -17,6 +17,9 @@ const discord = require('./DiscordTools')
 const ranks = require('./RankTools')
 const sanitize = require('mongo-sanitize')
 
+/**
+  * @returns {UserData}
+  */
 const addUser = async (discordId, niddabotAccountId = undefined, niddabotRank = undefined, tokenData = undefined, transform = true) => {
   if (!discordId && !tokenData) throw new Error('Data missing. You must either provide an access token (tokenData) or a Discord User Id (discordId).')
   // Request user information using access token or discord user id
@@ -73,6 +76,7 @@ const revokeUserToken = async id => {
  * Finds a Niddabot User Account with the specified Discord Id. Returns undefined if nothing was found.
  * @param {string} discordId The Discord User Id.
  * @param {boolean} transform Whether the result should be transformed or remain as a mongoose document. Default: true
+ * @returns {UserData}
  */
 const findUser = async (discordId, transform = true) => {
   if (!discordId) return undefined
@@ -80,11 +84,19 @@ const findUser = async (discordId, transform = true) => {
   if (!user) return undefined
   return (transform) ? transformUser(user) : user
 }
+const findUserByRank = async (rankName, transform = true) => {
+  if (!rankName) return undefined
+  const rank = await ranks.getRank(rankName)
+  const user = await User.findOne({ niddabotRank: { rankId: rank.id } })
+  if (!user) return undefined
+  return (transform) ? transformUser(user) : user
+}
+
 /**
  * Finds a Niddabot User Account with the specified Id. Returns undefined if nothing was found.
  * @param {string} id The Niddabout User Account Id.
  * @param {boolean} transform Whether the result should be transformed or remain as a mongoose document. Default: true
- * @returns {*}
+ * @returns {UserData}
  */
 const getUser = async (id, transform = true) => {
   if (!id) return undefined
@@ -103,7 +115,7 @@ const getNiddabotUser = async (id, discordId) => {
 
   const createdUser = new NiddabotUser(user)
   // Load Discord Info
-  createdUser.discordUser = (user.tokenData) ? await discord.requestUser(user.tokenData.accessToken, undefined) || await discord.requestUser(undefined, discordId || user.discordId) : await discord.requestUser(undefined, discordId || user.discordId)
+  createdUser.discordUser = (createdUser.hasValidToken) ? (await discord.requestUser(createdUser.tokenData.accessToken, undefined) || await discord.requestUser(undefined, user.discordId)) : await discord.requestUser(undefined, user.discordId)
   // Transform and Load Niddabot Rank
   createdUser.niddabotRank = (user.niddabotRank) ? await ranks.getRankById(user.niddabotRank.rankId) : undefined
 
@@ -196,12 +208,17 @@ const transformUser = user => {
   }
 }
 
+/**
+  * @returns {UserData}
+  */
 const verifyDatabase = async (log, adminId) => {
   // Verify admin account
   const adminUser = await addUser(process.env.NIDDABOT_DEV_ID, adminId, 'Super User')
-  if (log) console.log(`Found Admin User with Discord Id ${adminUser.discordId}`)
+  if (adminUser && log) console.log(`Found Admin User with Discord Id ${adminUser.discordId}`)
+  else if (!adminUser) throw new Error('No Admin User found.')
   const users = await User.find()
-  if (log) console.log(`Found ${users.length} users.`)
+  if (Array.isArray(users) && log) console.log(`Found ${users.length} users.`)
+  return adminUser
 }
 
 module.exports = {
@@ -212,5 +229,6 @@ module.exports = {
   revokeUserToken: revokeUserToken,
   getUser: getUser,
   findUser: findUser,
+  findUserByRank: findUserByRank,
   getNiddabotUser: getNiddabotUser
 }

@@ -145,7 +145,7 @@ class NiddabotUser {
     this.fullName = undefined
 
     Object.defineProperty(this, 'exists', {
-      get: () => { return (this.discordId && this.discordUser) }
+      get: () => { return (this.discordId !== null && this.discordId !== undefined && this.discordUser !== null && this.discordUser !== undefined) }
     })
     Object.defineProperty(this, 'registered', {
       get: () => { return (this.id) }

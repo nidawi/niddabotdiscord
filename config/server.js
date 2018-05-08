@@ -75,7 +75,11 @@ const createApp = () => {
 
   // Fetch mandatory data
   app.use(async (req, res, next) => {
-    if (!req.session.author) req.session.author = await discord.requestUser(undefined, process.env.NIDDABOT_DEV_ID)
+    if (!req.session.author) {
+      req.session.author = {}
+      console.log('fetched author data.')
+      req.session.author = await discord.requestUser(undefined, process.env.NIDDABOT_DEV_ID)
+    }
     next()
   })
 

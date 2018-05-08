@@ -13,9 +13,15 @@ require('./config/database').create()
     // Check up on the integrity of the database and fill in missing info, if any.
     await Ranks.verifyDatabase(true)
     // Verify that an Admin Account exists.
-    const adminId = await Accounts.verifyDatabase(true)
+    const adminAccount = await Accounts.verifyDatabase(true)
     // Verify users.
-    await Users.verifyDatabase(true, adminId)
+    const adminUser = await Users.verifyDatabase(true, adminAccount.id)
+    // Make sure that the Admin User & the Admin Account are connected.
+    if (!adminAccount.discordUser) {
+      console.log('Admin Account and Admin User are not linked. Attempting to fix...')
+      await Accounts.updateAccount(adminAccount.id, { discordUser: adminUser.id })
+    }
+    console.log('Database START UP successful.')
   })
   .catch(err => {
     // If database fails to connect:
