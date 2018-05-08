@@ -50,18 +50,17 @@ class Niddabot {
       })
       try {
         // Load Required Data into Session.
-        const requiredData = await Promise.all([
-          DiscordTools.requestSelf(),
-          DiscordTools.requestGuild(process.env.NIDDABOT_HOME_ID)
-        ])
-        console.log(requiredData)
-        niddabotSession.application = requiredData[0].applicationData
-        niddabotSession.user = requiredData[0].accountData
-        niddabotSession.home = requiredData[1]
+        // Make sure that we don't overload Discord with these requests, as they are quite many.
+        // Wait for a second between the calls.
+        const self = await DiscordTools.requestSelf()
+        niddabotSession.application = self.applicationData
+        niddabotSession.user = self.accountData
+        await DiscordTools.wait(1000)
+        niddabotSession.home = await DiscordTools.requestGuild(process.env.NIDDABOT_HOME_ID)
         niddabotSession.exit = this.disconnect
         console.log(`Required Niddabot Data has been loaded:\n` +
-        `Application: ${requiredData[0].applicationData.name} (${requiredData[0].applicationData.id})\n` +
-        `User: ${requiredData[0].accountData.username} (${requiredData[0].accountData.discordId})\n` +
+        `Application: ${niddabotSession.application.name} (${niddabotSession.application.id})\n` +
+        `User: ${niddabotSession.user.username} (${niddabotSession.user.discordId})\n` +
         `Home Server: ${niddabotSession.home.name} (${niddabotSession.home.id})`)
       } catch (err) {
         // If this fails, exit bot.
