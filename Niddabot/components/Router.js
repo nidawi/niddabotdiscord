@@ -90,16 +90,14 @@ class Router {
         default: break // Any other input will be interpreted as "any"
       }
 
-      // if (a.options.devOnly && !data.)
-
       const isMatch = path => {
         if (getType(path) === 'regexp') return path.test(param)
         else return (path === '*' || (path && path === param) || (!path && !param))
       }
 
       let result = false
-      if (['string', 'regexp'].indexOf(getType(a.path)) !== -1) result = isMatch(a.path) // return (a.path === '*' || (a.path && msg.startsWith(a.path)) || (!msg && !a.path))
-      else if (Array.isArray(a.path)) result = a.path.some(b => isMatch(b))// (b.path === '*' || (b && msg.startsWith(b)) || (!msg && !b)))
+      if (['string', 'regexp'].indexOf(getType(a.path)) !== -1) result = isMatch(a.path)
+      else if (Array.isArray(a.path)) result = a.path.some(b => isMatch(b))
       console.log(`comparing param "${param}" to route "${a.path}", result: ${result}`)
       return result
     })
@@ -119,17 +117,12 @@ class Router {
       console.log(`Wait Done: ${data.content}. Error occured.`)
     }
   }
-  getModuleList () {
-    return this._modules.map(a => {
-      return {
-        path: a.path,
-        type: a.type,
-        options: a.options
-      }
-    })
+  getModuleList (asString = true) {
+    const mods = this._modules.map((a, i) => { return { id: i, path: a.path, type: a.type, options: a.options } })
+    return (!asString) ? mods : mods.map(a => `${a.id}. "${a.path}" [${a.type}] | Options: ${JSON.stringify(a.options)}`)
   }
   getUsedPaths (friendly = true) {
-    if (friendly) return Array.from(new Set(this._modules.map(a => `"${a.path || '{base}'}"`)))
+    if (friendly) return Array.from(new Set(this._modules.filter(a => (['', '*'].indexOf(a.path) === -1)).map(a => `"${a.path}"`)))
     else return Array.from(new Set(this._modules.map(a => a.path)))
   }
 
@@ -138,7 +131,6 @@ class Router {
    * @type {Object}
    * @property {"mentioned"|"command"|"either"|"any"} [trigger] What should trigger this route. Default: 'any'
    * @property {"guild"|"private"|"any"} [type] What message type should trigger this route. Default: 'guild'
-   * @property {boolean} devOnly Whether this route should only trigger when devMode is active. Default: false
    */
 
   /**
@@ -166,7 +158,6 @@ class Router {
    * @param {moduleOptions} [options=undefined] Module Options.
    * @param {"mentioned"|"command"|"either"|"any"} [options.trigger] What should trigger this route. Default: 'either'
    * @param {"guild"|"private"|"any"} [options.type] What message type should trigger this route. Default: 'guild'
-   * @property {boolean} [options.devOnly] Whether this route should only trigger when devMode is active. Default: false
    * @memberof Router
    */
   use (path, module, options = undefined) {
@@ -175,8 +166,7 @@ class Router {
      */
     const defaultOptions = {
       trigger: 'either',
-      type: 'guild',
-      devOnly: false
+      type: 'guild'
     }
 
     this._modules.push({
@@ -185,6 +175,18 @@ class Router {
       type: (module instanceof Router) ? 'router' : Object.prototype.toString.call(module).replace(/\[.+ |]/g, '').toLowerCase(),
       options: Object.assign(defaultOptions, options)
     })
+  }
+
+  /**
+   * Removes a module with the given id. Returns the deleted module.
+   * @param {number} id
+   */
+  remove (id) {
+    try {
+      if (this._modules[id]) {
+        return this._modules.splice(id, 1)
+      } else throw new Error('invalid module id.')
+    } catch (err) { throw new Error('failed to remove module.') }
   }
 }
 

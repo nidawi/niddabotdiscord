@@ -79,12 +79,16 @@ module.exports = msg => {
     isMentioned: (mentions.indexOf(msg.self.user.discordId) > -1),
     isCommand: (parts[0].startsWith('!')),
     permissions: (msg.guild) ? msg.guild.me.highestRole.permissions : undefined,
+    getText () {
+      return parts.filter(a => !a.startsWith('--')).join(' ')
+    },
     toString () {
       return `\n` +
       `Arguments: [${this.args.size}] ${JSON.stringify(Array.from(this.args.entries()).map(a => { return { key: a[0], value: a[1] } }))}\n` +
       `Message: ${this.message}\n` +
       `Parts (clean): ${JSON.stringify(this.parts)}\n` +
       `Parts: ${JSON.stringify(parts)}\n` +
+      `Textual: ${this.getText()}\n` +
       `Type: ${this.type}\n` +
       `Mentions: ${this.mentions}\n` +
       `Is mentioned: ${this.isMentioned}\n` +

@@ -1,5 +1,8 @@
 const NiddabotObject = require('./NiddabotObject')
+const Router = require('../components/Router')
 const DiscordGuild = require('./DiscordGuild')
+
+const statistics = require('../../lib/statistics')
 
 /**
  * @typedef UserDataEmail
@@ -60,6 +63,10 @@ class NiddabotSelf extends NiddabotObject {
      */
     this.user = undefined
     /**
+     * @type {Router}
+     */
+    this.headRouter = undefined
+    /**
      * @type {function}
      */
     this.exit = undefined
@@ -81,11 +88,13 @@ class NiddabotSelf extends NiddabotObject {
    * @returns {string}
    */
   toString () {
-    return `I have currently been online for ${super.secondsToMinutes((new Date() - this.startedAt) / 1000)}\n` +
+    return `My current status is as follows:\n` +
+    `I have currently been online for ${super.secondsToMinutes((new Date() - this.startedAt) / 1000)}\n` +
     `I am currently ${(this.devMode) ? '' : 'not'} in Development Mode.\n` +
-    `My creator and developer is ${this.application.owner.username}.\n` +
+    `My creator and developer is ${this.application.owner.username}#${this.application.owner.discriminator}.\n` +
     `My currently registered Home Server is ${this.home.name}.\n` +
-    `Emoji Test for "boatyVV": ${this.quickEmote('boatyVV')}`
+    `My current memory stats are:\n${statistics.getMemoryUsage()}\n` +
+    `My System Info is:\n${statistics.getSystemInfo()}`
   }
 }
 

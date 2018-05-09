@@ -17,19 +17,13 @@ class Niddabot {
       // Modules used by Niddabot.
       { path: '*', module: require('./middleware/niddabot-session') },
 
-      { path: 'mentioned', module: (route, msg, next) => { msg.reply('mentioned') }, options: { trigger: 'mentioned' } },
-      { path: 'command', module: (route, msg, next) => { msg.reply('command') }, options: { trigger: 'command' } },
-      { path: 'either', module: (route, msg, next) => { msg.reply('either') }, options: { trigger: 'either' } },
-      { path: 'any', module: (route, msg, next) => { msg.reply('any') }, options: { trigger: 'any' } },
-      { path: '*', module: (route, msg, next) => { msg.reply('private') }, options: { type: 'private' } },
-
       { path: 'sudo', module: require('./modules/sudo') }, // Super User module
       { path: 'test', module: require('./modules/testing') }, // Test module
-      { path: 'route', module: require('./modules/routertest') }, // Router test
 
       // Management
       { path: 'me', module: require('./modules/me') },
       { path: 'user', module: require('./modules/user') },
+      { path: 'guild', module: require('./modules/server') },
 
       // { path: '*', module: (route, msg, next) => { msg.reply('Triggered by being mentioned.'); next() }, options: { onlyMentioned: true } },
 
@@ -58,6 +52,7 @@ class Niddabot {
         await DiscordTools.wait(1000)
         niddabotSession.home = await DiscordTools.requestGuild(process.env.NIDDABOT_HOME_ID)
         niddabotSession.exit = this.disconnect
+        niddabotSession.headRouter = niddabotRouter
         console.log(`Required Niddabot Data has been loaded:\n` +
         `Application: ${niddabotSession.application.name} (${niddabotSession.application.id})\n` +
         `User: ${niddabotSession.user.username} (${niddabotSession.user.discordId})\n` +
@@ -89,7 +84,14 @@ class Niddabot {
           console.time(`"${msg.content}" preprocess`)
           await preProcess(msg)
           console.timeEnd(`"${msg.content}" preprocess`)
-          // msg.guild.me.voiceChannel.connection.playBroadcast()
+
+          // If Niddabot is in Developer Mode, ignore all messages that aren't made by Admins or above.
+          if (niddabotSession.devMode) {
+            if (!(await msg.niddabot.user).canPerform(999)) {
+              console.log('Niddabot is in development mode. Ignored message from non-admin+ user.')
+              return
+            }
+          }
 
           // Send the message down the middleware chain and await completion.
           // This will return regardless of whether the message was caught in the chain or if it passes all the way through it.
@@ -143,18 +145,13 @@ class Niddabot {
       if (msg.messageContent) {
         try {
           // Things that are based on the module 'messageParser'
-          if (msg.messageContent.hasArgument('echo')) msg.reply(`ECHO => ${msg.messageContent.toString()}`) // IF the user requests an echo.
-          if (msg.messageContent.hasArgument('pos')) msg.reply(`POS => member: ${msg.member}, guild: ${msg.guild}, channel: ${msg.channel}, user: ${msg.user}`)
-          if (msg.messageContent.hasArgument('modules')) msg.reply(`MODULES => ${JSON.stringify(niddabotRouter.getModuleList())}`)
-          if (msg.messageContent.hasArgument('session')) msg.reply(`SESSION => ${JSON.stringify(msg.session)}`)
-          if (msg.messageContent.hasArgument('server')) {
-            const answer = (await msg.niddabot.server).toString(msg.messageContent.getArgument('debug') === true)
-            if (answer) msg.reply(`SERVER => \n${answer}`)
-          }
+          // IMPLEMENT MODERATOR CHECK.
+          // If the user requests an echo.
+          if (msg.messageContent.hasArgument('echo')) msg.reply(`ECHO => ${msg.messageContent.toString()}`)
           // Time has to be last.
           if (msg.messageContent.hasArgument('time')) msg.reply(`TIME => total: ${(new Date() - msg.statistics.initiatedAt)} ms, pre-process: ${msg.statistics.preProcessDoneAt - msg.statistics.initiatedAt} ms, routing: ${(msg.statistics.postProcessStartAt - msg.statistics.preProcessDoneAt)} ms, post-process: ${new Date() - msg.statistics.postProcessStartAt} ms`)
         } catch (err) {
-          console.log(err.message)
+          console.log('Post-processing failed: ', err.message)
         }
       }
     }

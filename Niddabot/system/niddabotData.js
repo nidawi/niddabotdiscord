@@ -26,8 +26,6 @@ class NiddabotData {
         }
       })
     }
-
-    // REMEMBER TO ADD A "HOME" REFERENCE TO HER OWN, NIDDABOT HOME, SERVER.
   }
 }
 
