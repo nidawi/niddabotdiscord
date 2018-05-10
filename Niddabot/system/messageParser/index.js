@@ -4,6 +4,17 @@ const emojiRegex = /.*<a?:\S+:\d+>.*/i // Matches Discord Emojis: <a?:EMOJI_NAME
 const emojiCleanRegex = /(.*<a?:)|(>.*)/gi
 const mentionRegex = /.*<@&?\d*>.*/i // Matches Discord Mentions.
 
+/*
+Type	Structure	Example
+User	<@USER_ID>	<@80351110224678912>
+User (Nickname)	<@!USER_ID>	<@!80351110224678912>
+Channel	<#CHANNEL_ID>	<#103735883630395392>
+Role	<@&ROLE_ID>	<@&165511591545143296>
+Custom Emoji	<:NAME:ID>	<:mmLol:216154654256398347>
+Custom Emoji (Animated)	<a:NAME:ID>	<a:b1nzy:392938283556143104>
+
+*/
+
 /**
  * Attempts to parse JSON.
  * @param {string} text String to parse.
@@ -47,7 +58,7 @@ const getType = text => {
 
 const fullSplit = text => {
   return [].concat(...text
-    .split(/(?<!")\s(?=")|(?<=")\s(?!")|(?=-{2})/)
+    .split(/(?<!")\s(?=")|(?<=")\s(?!")|(?=-{2})/) // This works brilliantly. I have no idea why Standardjs is complaining so loudly.
     .map(a => a.trim())
     .map(a => { if (a.indexOf('"') === -1) {return a.split(/\s/) } else return a }))
     .map(a => a.replace(/"/g, ''))
@@ -74,6 +85,7 @@ module.exports = msg => {
     parts: cleanedParts,
     emojis: emojis,
     urls: urls,
+    currentRoute: undefined,
     type: getType(msg.channel.type),
     mentions: mentions,
     isMentioned: (mentions.indexOf(msg.self.user.discordId) > -1),

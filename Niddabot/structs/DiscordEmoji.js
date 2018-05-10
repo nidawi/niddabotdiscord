@@ -1,3 +1,5 @@
+const DiscordGuild = require('./DiscordGuild')
+
 /**
  * @typedef UserData
  * @type {Object}
@@ -17,7 +19,7 @@
  * @property {boolean} require_colons
  * @property {boolean} animated
  * @property {string} id
- * @property {string} [guildId]
+ * @property {DiscordGuild} guild
  */
 
 class DiscordEmoji {
@@ -54,9 +56,9 @@ class DiscordEmoji {
      */
     this.id = emoji.id
     /**
-     * @type {string}
+     * @type {DiscordGuild}
      */
-    this.guildId = emoji.guildId
+    this.guild = emoji.guild
   }
   /**
    * Returns a string that can be used to send this Emote to Discord.

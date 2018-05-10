@@ -1,6 +1,6 @@
 // This module is only accessible to Super Users.
 const Router = require('../components/Router')
-const helpers = require('../modules/entertainment/niddabot-music/helpers')
+const helpers = require('../util/helpers')
 
 const router = new Router()
 

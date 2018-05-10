@@ -4,6 +4,8 @@ const Collection = require('./components/Collection')
 const DiscordGuild = require('./structs/DiscordGuild')
 const DiscordChannel = require('./structs/DiscordChannel')
 const DiscordEmoji = require('./structs/DiscordEmoji')
+const DiscordMessage = require('./structs/DiscordMessage')
+const DiscordMember = require('./structs/DiscordMember')
 
 const discordURLs = {
   authURL: 'https://discordapp.com/api/oauth2/authorize',
@@ -99,7 +101,7 @@ const wait = (delay = 500) => {
 /**
  * @param {string} url
  * @param {request} options
- * @returns {{ status: number, data: *}}
+ * @returns {{ success: boolean, status: number, data: *}}
  */
 const discordRequest = async (url, options) => {
   // Performs a complex request that can be customized as needed. There will be several "quick & dirty" request methods as well.
@@ -119,7 +121,7 @@ const discordRequest = async (url, options) => {
     const response = await request(fetchOptions)
     // If the request is successful.
     if (Math.floor(response.statusCode / 100) === 2) {
-      return { status: response.statusCode, data: (response.statusCode !== 204 && response.body) ? JSON.parse(response.body) : undefined }
+      return { success: true, status: response.statusCode, data: (response.statusCode !== 204 && response.body) ? JSON.parse(response.body) : undefined }
     } else { // If it is unsuccessful.
       if (response.statusCode === 429) {
         const resp = JSON.parse(response.body)
@@ -130,7 +132,7 @@ const discordRequest = async (url, options) => {
         await wait(resp.retry_after || 500)
         return discordRequest(url, options)
       } else {
-        return { status: response.statusCode, data: response.body }
+        return { success: false, status: response.statusCode, data: response.body }
       }
     }
   } catch (err) {
@@ -246,6 +248,7 @@ const testToken = async token => {
  * @typedef UserData
  * @type {Object}
  * @property {string} discordId
+ * @property {string} id
  * @property {string} username
  * @property {string} discriminator
  * @property {string} avatar
@@ -283,6 +286,7 @@ const convertUserObject = data => {
   else {
     return {
       discordId: data.id,
+      id: data.id,
       username: data.username,
       discriminator: data.discriminator,
       avatar: data.avatar,
@@ -379,11 +383,16 @@ const requestGuild = async guildId => {
   if (!guildId) return undefined
   const response = await discordRequest(`guilds/${guildId}`)
   if (response && response.status === 200) {
-    return Object.assign(new DiscordGuild(response.data), {
-      channels: new Collection((await requestChannels(guildId)).map(a => { return [a.id, a] })),
-      owner: await requestUser(undefined, response.data.owner_id),
-      emojis: new Collection(response.data.emojis.map(a => { return [a.id, new DiscordEmoji(Object.assign(a, { guildId: guildId }))] }))
-    })
+    const guild = new DiscordGuild(response.data)
+    guild.owner = await requestUser(undefined, response.data.owner_id)
+    guild.channels = new Collection((await requestChannels(guildId)).map(a => [a.id, Object.assign(a, { guild: guild })]))
+    guild.emojis = new Collection(response.data.emojis.map(a => { return [a.id, new DiscordEmoji(Object.assign(a, { guild: guild }))] }))
+    guild.members = new Collection((await requestMembers(guildId)).map(a => [a.user.id, Object.assign(a, {
+      guild: guild,
+      roles: new Collection(a.roles.map(b => [b, guild.roles.get(b)]))
+    })]))
+
+    return guild
   } else return undefined
 }
 
@@ -403,9 +412,66 @@ const requestChannels = async guildId => {
   } else return undefined
 }
 
-const requestMessages = async (channelId, options = undefined) => {
-  const queryParams = Object.assign({ around: undefined, before: undefined, after: undefined, limit: 100 }, options)
+/**
+ * @param {string} guildId
+ * @param {MemberRequestOptions} options
+ * @returns {DiscordMember[]}
+ */
+const requestMembers = async (guildId, options = undefined) => {
+  const requestOptions = {
+    qs: Object.assign({
+      limit: 1000
+    }, options)
+  }
+  // https://discordapp.com/api/guilds/426866271276105750/members?limit=1000
+  const response = await discordRequest(`guilds/${guildId}/members`, requestOptions)
+  if (response && response.success) {
+    return response.data
+      .map(a => new DiscordMember(a))
+  } else return undefined
 }
+
+/**
+ * @param {string} channelId
+ * @param {MessageRequestOptions} [options] Message Request Options.
+ * @returns {DiscordMessage[]}
+ */
+const requestMessages = async (channelId, options = undefined) => {
+  const requestOptions = {
+    qs: Object.assign({
+      around: undefined,
+      before: undefined,
+      after: undefined,
+      limit: 100
+    }, options)
+  }
+
+  const response = await discordRequest(`channels/${channelId}/messages`, requestOptions)
+  if (response && response.success) {
+    return response.data
+      .filter(Boolean) // Filter away empty responses
+      .map(a => { return new DiscordMessage(a) })
+  } else return undefined
+}
+
+// https://discordapp.com/developers/docs/resources/channel#delete-message
+const requestMessage = () => {
+
+}
+const editMessage = () => {
+
+}
+const deleteMessage = async (channelId, messageId) => {
+  const requestOptions = {
+    method: 'DELETE'
+  }
+
+  const response = await discordRequest(`channels/${channelId}/messages/${messageId}`, requestOptions)
+}
+const deleteMessages = () => {
+  
+}
+
 
 module.exports = {
   getAuthenticationString: generateAuthenticationString,
@@ -418,8 +484,27 @@ module.exports = {
   revokeToken: revokeToken,
   testToken: testToken,
   requestUser: requestUser,
+  requestMembers: requestMembers,
   requestGuild: requestGuild,
   requestChannels: requestChannels,
   requestEmoji: requestEmoji,
+  requestMessages: requestMessages,
   wait: wait
 }
+
+/**
+ * "around", "before", and "after" are all mutually exclusive.
+ * @typedef MessageRequestOptions
+ * @type {Object}
+ * @property {string} [around] Fetch messages AROUND this message Id.
+ * @property {string} [before] Fetch messages BEFORE this message Id.
+ * @property {string} [after] Fetch messages AFTER this message Id.
+ * @property {number} [limit=50] Messages to fetch. Max: 100. Default: 50.
+ */
+
+/**
+ * @typedef MemberRequestOptions
+ * @type {Object}
+ * @property {number} [limit] Fetch this many members (1-1000). Default: 1000
+ * @property {string} [after] Fetch members AFTER this user Id.
+ */

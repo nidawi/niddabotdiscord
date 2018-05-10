@@ -1,7 +1,19 @@
 /**
- * A customized, extended standard Map.
+ * @extends {Map}
  */
 class Collection extends Map {
+  constructor (iterable) {
+    super(iterable)
+
+    /**
+     * @type {number}
+     */
+    this.length = undefined
+
+    Object.defineProperty(this, 'length', {
+      get: () => { return this.entries().length }
+    })
+  }
   /**
    * Tries to find an item in the Collection that has a property/value pair matching the specified property and value. Only the first result is returned by default.
    * @example find('name', 'Alan') => would return an object that has a property called "name" which has the value "Alan" (if it exists).

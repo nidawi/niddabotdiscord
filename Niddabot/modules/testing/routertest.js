@@ -4,7 +4,7 @@ const router = new Router()
 
 router.use('*', (route, msg, next) => {
   msg.reply('route ALL path!')
-  return next()
+  next()
 })
 router.use('', (route, msg, next) => {
   msg.reply('route base path!')
@@ -22,6 +22,11 @@ router.use(['test3', 'test4'], (route, msg, next) => {
 // Regexp Router Test
 router.use(/&{3}/, async (route, msg, next) => {
   msg.reply('Regexp successful!')
+})
+// CURRENT ROUTE TEST -- NEEDS MORE TESTING
+router.use(/\w+/, (route, msg, next) => {
+  // This should return whatever the regexp matched.
+  msg.reply(`current route is: ${route.currentRoute}`)
 })
 
 // Tests different router types.

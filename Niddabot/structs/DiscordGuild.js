@@ -1,5 +1,7 @@
 const DiscordChannel = require('./DiscordChannel')
 const DiscordEmoji = require('./DiscordEmoji')
+const DiscordMember = require('./DiscordMember')
+const DiscordRole = require('./DiscordRole')
 const Collection = require('../components/Collection')
 
 /**
@@ -9,7 +11,7 @@ const Collection = require('../components/Collection')
  * @property {*[]} emojis
  * @property {string} application_id
  * @property {string} name
- * @property {*[]} roles
+ * @property {RoleData[]} roles
  * @property {number} afk_timeout
  * @property {string} system_channel_id
  * @property {string} widget_channel_id
@@ -26,6 +28,19 @@ const Collection = require('../components/Collection')
  * @property {boolean} embed_enabled
  * @property {string} id
  * @property {string} icon
+ */
+
+/**
+ * @typedef RoleData
+ * @type {Object}
+ * @property {boolean} hoist
+ * @property {string} name
+ * @property {boolean} mentionable
+ * @property {number} color
+ * @property {number} position
+ * @property {string} id
+ * @property {boolean} managed
+ * @property {number} permissions
  */
 
 /**
@@ -50,7 +65,6 @@ class DiscordGuild {
     this.mfaLevel = guild.mfa_level
     this.appId = guild.application_id
     this.name = guild.name
-    this.roles = guild.roles
     this.afkTimeout = guild.afk_timeout
     this.systemChannel = guild.system_channel_id
     this.widgetChannel = guild.widget_channel_id
@@ -65,6 +79,15 @@ class DiscordGuild {
     this.verificationLevel = guild.verification_level
     this.embedsEnabled = guild.embed_enabled
     this.id = guild.id
+
+    /**
+     * @type {Collection}
+     */
+    this.roles = new Collection(guild.roles.map(a => [a.id, new DiscordRole(a)]))
+    /**
+     * @type {Collection}
+     */
+    this.members = undefined
     /**
      * @type {Collection}
      */
@@ -93,6 +116,17 @@ class DiscordGuild {
       get: () => { return (this.exists) ? `https://cdn.discordapp.com/icons/${this.id}/${guild.icon}` : undefined }
     })
   }
+
+  getMemberHighestRole (userId) {
+    /**
+     * @type {DiscordMember}
+     */
+    const member = this.members.get(userId)
+    if (member) {
+
+    }
+  }
+
   /**
    * Returns a string representation of this guild.
    * @memberof DiscordGuild
@@ -102,7 +136,9 @@ class DiscordGuild {
     return `--- Guild Info ---\n` +
     `Name: ${this.name}\n` +
     `Region: ${this.region}\n` +
-    `Owner: ${this.owner.username}`
+    `Owner: ${this.owner.username}\n` +
+    `Channels: ${this.channels.length}\n` +
+    `Members: ${this.members.length}`
   }
 }
 

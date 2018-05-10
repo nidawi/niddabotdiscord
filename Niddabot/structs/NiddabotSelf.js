@@ -2,7 +2,7 @@ const NiddabotObject = require('./NiddabotObject')
 const Router = require('../components/Router')
 const DiscordGuild = require('./DiscordGuild')
 
-const statistics = require('../../lib/statistics')
+const statistics = require('../util/statistics')
 
 /**
  * @typedef UserDataEmail

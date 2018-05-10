@@ -52,9 +52,8 @@ class Router {
     })
   }
   /**
-   * d
-   * @param {*} data d
-   * @param {*} modulePath d
+   * @param {*} data
+   * @param {*} modulePath
    * @returns {routeData}
    */
   _createRouteData (data, modulePath) {
@@ -63,6 +62,7 @@ class Router {
     if (modulePath === '*') return data
     const pathRegexp = new RegExp(`${(data.routed) ? '' : '!?'}${modulePath}\\s?`, 'i')
     return Object.assign({}, data, {
+      currentRoute: data.parts[0],
       parts: data.parts.filter(a => !pathRegexp.test(a)), // a !== modulePath),
       message: data.message.replace(pathRegexp, ''),
       routed: true

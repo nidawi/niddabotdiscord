@@ -23,7 +23,8 @@ class Niddabot {
       // Management
       { path: 'me', module: require('./modules/me') },
       { path: 'user', module: require('./modules/user') },
-      { path: 'guild', module: require('./modules/server') },
+      { path: 'server', module: require('./modules/server') },
+      { path: 'guild', module: require('./modules/guild') },
 
       // { path: '*', module: (route, msg, next) => { msg.reply('Triggered by being mentioned.'); next() }, options: { onlyMentioned: true } },
 

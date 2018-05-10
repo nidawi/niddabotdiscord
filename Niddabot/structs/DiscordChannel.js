@@ -1,3 +1,5 @@
+const DiscordGuild = require('./DiscordGuild')
+
 /**
  * @typedef ChannelData
  * @type {Object}
@@ -12,6 +14,7 @@
  * @property {number} bitrate
  * @property {number} user_limit
  * @property {string[]} permission_overwrites
+ * @property {DiscordGuild} guild
  */
 
 /**
@@ -47,6 +50,11 @@ class DiscordChannel {
     this.bitrate = channel.bitrate
     this.userLimit = channel.user_limit
     this.permissionOverwrites = channel.permission_overwrites
+
+    /**
+     * @type {DiscordGuild}
+     */
+    this.guild = channel.guild
   }
 }
 

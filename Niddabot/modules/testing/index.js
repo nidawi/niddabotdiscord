@@ -36,4 +36,7 @@ router.use('session', (route, msg, next) => {
 // Router tests.
 router.use('router', require('./routertest'))
 
+// API tests
+router.use('api', require('./api-tests'))
+
 module.exports = router
