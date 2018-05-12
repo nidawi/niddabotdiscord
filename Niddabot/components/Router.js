@@ -1,3 +1,12 @@
+const Discordjs = require('discord.js')
+const MessageContent = require('../system/messageParser/MessageContent')
+const NiddabotSelf = require('../structs/NiddabotSelf')
+const NiddabotCache = require('../system/NiddabotCache')
+const NiddabotServer = require('../structs/NiddabotServer')
+const NiddabotUser = require('../structs/NiddabotUser')
+const DiscordGuild = require('../structs/DiscordGuild')
+const DiscordChannel = require('../structs/DiscordChannel')
+
 /**
  * @typedef routeData
  * @type {Object}
@@ -127,13 +136,6 @@ class Router {
   }
 
   /**
-   * @typedef moduleOptions
-   * @type {Object}
-   * @property {"mentioned"|"command"|"either"|"any"} [trigger] What should trigger this route. Default: 'any'
-   * @property {"guild"|"private"|"any"} [type] What message type should trigger this route. Default: 'guild'
-   */
-
-  /**
    * @typedef moduleData
    * @type {Object}
    * @property {string} path The path that should trigger this module.
@@ -143,19 +145,10 @@ class Router {
    */
 
   /**
-   * Router module callback.
-   * @typedef routerCallback
-   * @type {function(string,string,string)}
-   * @param {string} route
-   * @param {string} msg
-   * @param {string} next
-   */
-
-  /**
    * Adds a module to Niddabot's middleware chain.
    * @param {string|string[]|RegExp} path The path that should trigger this module.
-   * @param {routerCallback|Router} module The module. Either a function or another Router.
-   * @param {moduleOptions} [options=undefined] Module Options.
+   * @param {RouterCallback|Router} module The module. Either a function or another Router.
+   * @param {ModuleOptions} [options=undefined] Module Options.
    * @param {"mentioned"|"command"|"either"|"any"} [options.trigger] What should trigger this route. Default: 'either'
    * @param {"guild"|"private"|"any"} [options.type] What message type should trigger this route. Default: 'guild'
    * @memberof Router
@@ -191,3 +184,48 @@ class Router {
 }
 
 module.exports = Router
+
+/**
+ * Discord Message Data.
+ * @typedef DiscordMessageData
+ * @type {Object}
+ * @property {Discordjs.User} author
+ * @property {Discordjs.Guild} [guild]
+ * @property {Discordjs.GuildMember} [member]
+ * @property {Discordjs.DMChannel|Discordjs.TextChannel} channel
+ * @property {Discordjs.Client} client
+ * @property {string} content
+ * @property {MessageContent} messageContent
+ * @property {NiddabotData} niddabot
+ * @property {NiddabotSelf} self
+ * @property {{}} [session]
+ */
+
+/**
+ * Router module callback.
+ * @typedef RouterCallback
+ * @type {(route:MessageContent, msg:DiscordMessageData, next:NextCallback) => void}
+ */
+
+/**
+ * Router Next Function.
+ * @typedef NextCallback
+ * @type {(err=Error) => void}
+ */
+
+/**
+ * @typedef ModuleOptions
+ * @type {Object}
+ * @property {"mentioned"|"command"|"either"|"any"} [trigger] What should trigger this route. Default: 'any'
+ * @property {"guild"|"private"|"any"} [type] What message type should trigger this route. Default: 'guild'
+ */
+
+/**
+ * @typedef NiddabotData
+ * @type {Object}
+ * @property {NiddabotServer} server
+ * @property {NiddabotUser} user
+ * @property {DiscordGuild} [guild]
+ * @property {DiscordChannel} channel
+ * @property {NiddabotCache} _cache
+ */

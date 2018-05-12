@@ -1,5 +1,5 @@
 // Route for dealing with "me", i.e. the user making the requests.
-const Router = require('../components/Router')
+const Router = require('../../../components/Router')
 
 const router = new Router()
 

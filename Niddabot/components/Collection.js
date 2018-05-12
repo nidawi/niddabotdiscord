@@ -11,7 +11,7 @@ class Collection extends Map {
     this.length = undefined
 
     Object.defineProperty(this, 'length', {
-      get: () => { return this.entries().length }
+      get: () => { return super.size }
     })
   }
   /**
@@ -26,13 +26,10 @@ class Collection extends Map {
     try {
       if (!property || !value) return undefined
       const result = this.entries()
-        .filter(a => {
-          return Object.getOwnPropertyNames(a.value).indexOf(property) !== -1 && a.value[property] === value
-        })
-        .map(a => {
-          return a.value
-        })
-      return (asArray) ? result : result[0]
+        .filter(a => Object.getOwnPropertyNames(a.value).indexOf(property) !== -1 && a.value[property] === value)
+        .map(a => a.value)
+      if (result.length === 0) return undefined
+      else return (asArray) ? result : result[0]
     } catch (err) { return undefined }
   }
   /**
@@ -60,6 +57,15 @@ class Collection extends Map {
   keys () {
     return Array.from(super.keys())
   }
+
+  toObject () {}
+
+  randomize (amount = 5) {
+    
+  }
+
+  first (amount = 1) {}
+  last (amount = 1) {}
 }
 
 module.exports = Collection

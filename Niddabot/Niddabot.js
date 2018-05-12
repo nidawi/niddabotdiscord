@@ -3,6 +3,7 @@ const DiscordTools = require('./DiscordTools')
 const Router = require('./components/Router')
 const NiddabotSelf = require('./structs/NiddabotSelf')
 
+const NiddabotCache = require('./system/NiddabotCache')
 const parseMessage = require('./system/messageParser')
 const applyBotData = require('./system/niddabotData')
 const dataTransformation = require('./system/dataTransforms')
@@ -11,22 +12,23 @@ const discordClient = new Discord.Client()
 
 class Niddabot {
   constructor () {
-    const niddabotRouter = new Router()
-    const niddabotSession = new NiddabotSelf()
+    const niddabotRouter = new Router() // Main router.
+    const niddabotSession = new NiddabotSelf() // An object that deals with Niddabot self-data.
+    const niddabotCache = new NiddabotCache() // The Niddabot cache.
+
     const niddabotModules = [
       // Modules used by Niddabot.
       { path: '*', module: require('./middleware/niddabot-session') },
 
-      { path: 'sudo', module: require('./modules/sudo') }, // Super User module
+      { path: 'sudo', module: require('./modules/utility/sudo') }, // Super User module
       { path: 'test', module: require('./modules/testing') }, // Test module
 
-      // Management
-      { path: 'me', module: require('./modules/me') },
-      { path: 'user', module: require('./modules/user') },
-      { path: 'server', module: require('./modules/server') },
-      { path: 'guild', module: require('./modules/guild') },
-
-      // { path: '*', module: (route, msg, next) => { msg.reply('Triggered by being mentioned.'); next() }, options: { onlyMentioned: true } },
+      //  Utility
+      { path: 'me', module: require('./modules/utility/me') },
+      { path: 'user', module: require('./modules/utility/user') },
+      { path: 'server', module: require('./modules/utility/server') },
+      { path: 'guild', module: require('./modules/utility/guild') },
+      { path: 'channel', module: require('./modules/utility/channel') },
 
       // Entertainment
       { path: 'music', module: require('./modules/entertainment/niddabot-music') },
@@ -130,9 +132,11 @@ class Niddabot {
 
         // Apply mandatory transformations
         try {
+          await (new Promise((resolve, reject) => { setTimeout(resolve, 1) })) // <-- Odd
+
           parseMessage(msg)
-          await applyBotData(msg)
           await dataTransformation(msg)
+          await niddabotCache.apply(msg)
 
           // Add statistics
           msg.statistics.preProcessDoneAt = new Date()

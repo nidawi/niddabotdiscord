@@ -27,7 +27,7 @@ const userSchema = new mongoose.Schema({
     ignored: { type: Boolean, default: false }
   },
   niddabotRank: {
-    rankId: { type: String, default: '5ad00e9b1afb3916e01e3c26' },
+    rankId: { type: String, required: [true, 'A rank Id is required.'] },
     rankSource: { type: String, default: 'default' }
   }, // rank is a global Niddabot permissions-method. It defines global access-rights to Niddabot features.
   niddabotAccount: { type: String }, // An associated Niddabot account, if any, referenced by _id.

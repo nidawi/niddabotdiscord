@@ -14,6 +14,6 @@ module.exports = async msg => {
   const delegate = msg.messageContent.getArgument('delegate')
   if (delegate) {
     console.log(`delegate set to ${delegate}`)
-    msg.niddabot._user = delegate
+    msg._delegate = delegate
   }
 }

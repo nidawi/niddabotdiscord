@@ -13,6 +13,9 @@ const _validateNumber = (value, name = 'value', min = 0, max = 500) => {
   else if (number < (min || 0) || number > (max || Number.MAX_SAFE_INTEGER)) throw new Error(`${number} is not a valid value for ${name}. The value has to be between ${min || 0} and ${max || Number.MAX_SAFE_INTEGER}.`)
   else return true
 }
+const validateNumber = (value, name = 'value', min = 0, max = 500) => {
+  if (_validateNumber(value, name, min, max)) return parseFloat(value)
+}
 const _validateBoolean = (value, name = 'string') => {
   if (typeof value === 'boolean') return true
   switch (value) {
@@ -32,6 +35,7 @@ const _convertBoolean = value => {
 
 module.exports = {
   secondsToMinutes: secondsToMinutes,
+  validateNumber: validateNumber,
   _validateNumber: _validateNumber,
   _validateBoolean: _validateBoolean,
   _convertBoolean: _convertBoolean

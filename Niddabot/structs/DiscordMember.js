@@ -1,5 +1,7 @@
+const Collection = require('../components/Collection')
 const DiscordRole = require('./DiscordRole')
 const DiscordGuild = require('./DiscordGuild')
+const helpers = require('../util/permissions')
 
 class DiscordMember {
   /**
@@ -10,11 +12,16 @@ class DiscordMember {
   constructor (member) {
     this.nick = (member.nick) ? member.nick : undefined
     this.user = member.user
-    this.roles = member.roles // These are an array of strings. Not actual role objects.
     this.mute = member.mute
     this.deaf = member.deaf
     this.joinedAt = (member.joined_at) ? new Date(member.joined_at) : undefined
 
+    /**
+     * This is a collection.
+     * @see {Collection}
+     * @type {Map<string, DiscordRole>}
+     */
+    this.roles = member.roles
     /**
      * @type {DiscordGuild}
      */
@@ -37,22 +44,19 @@ class DiscordMember {
    */
   getTotalPermissions () {
     if (this.isAdministrator()) return 8
-    let result
-    this.roles.values().forEach(a => { result |= a.permissions })
-    return result
+    return this.roles.values().reduce((a, b) => a | b)
   }
+
   /**
-   * Returns a boolean value representing whether or not the user has the provided role permissions to execute the action that requires the provided amount.
+   * Returns a boolean value representing whether or not the user has the provided role permissions to execute the action.
    * These are all bitwise operations.
-   * @param {Number} permission
+   * @param {number|"CREATE_INSTANT_INVITE"|"KICK_MEMBERS"|"BAN_MEMBERS"|"ADMINISTRATOR"|"MANAGE_CHANNELS"|"MANAGE_GUILD"|"ADD_REACTIONS"|"VIEW_AUDIT_LOG"|"VIEW_CHANNEL"|"SEND_MESSAGES"|"SEND_TTS_MESSAGES"|"MANAGE_MESSAGES"|"EMBED_LINKS"|"ATTACH_FILES"|"READ_MESSAGE_HISTORY"|"MENTION_EVERYONE"|"USE_EXTERNAL_EMOJIS"|"CONNECT"|"SPEAK"|"MUTE_MEMBERS"|"DEAFEN_MEMBERS"|"MOVE_MEMBERS"|"USE_VAD"|"CHANGE_NICKNAME"|"MANAGE_NICKNAMES"|"MANAGE_ROLES"|"MANAGE_WEBHOOKS"|"MANAGE_EMOJIS"} permission
    * @returns {boolean}
    * @memberof DiscordMember
    */
   hasPermission (permission) {
     if (this.isAdministrator()) return true
-    const permissions = this.getTotalPermissions()
-    const result = permissions | permission
-    return (result === permissions)
+    else return helpers.checkFlag(this.getTotalPermissions(), permission)
   }
 
   toString () {

@@ -1,6 +1,9 @@
 const Collection = require('../components/Collection')
+const DiscordTools = require('../DiscordTools')
+const DiscordMember = require('./DiscordMember')
 const DiscordAttachment = require('./DiscordAttachment')
 const DiscordEmoji = require('./DiscordEmoji')
+const DiscordChannel = require('./DiscordChannel')
 
 class DiscordMessage {
   /**
@@ -27,20 +30,57 @@ class DiscordMessage {
     this.author = message.author
     this.mention_roles = message.mention_roles
     this.content = message.content
-    this.channel_id = message.channel_id
     this.mentions = message.mentions
     this.type = message.type
+    this.channelId = message.channel_id
 
-    this._discord = require('../DiscordTools')
+    this._tools = require('../DiscordTools') // This is a temporary band-aid to work around the Node circular Require restriction. Hopefully this will be solved in future refactors.
+
+    /**
+     * @type {DiscordChannel}
+     */
+    this.channel = undefined
+    /**
+     * @type {DiscordMember}
+     */
+    this.member = undefined
+
+    /**
+     * The age of this message, in whole days.
+     * Remember: Bulk-delete only accepts messages that are two weeks or younger.
+     * @type {number}
+     */
+    this.age = undefined
+
+    Object.defineProperty(this, 'age', {
+      get: () => Math.round((new Date() - this.timestamp) / 1000 / 60 / 60 / 24)
+    })
   }
-  async send() {
-
+  /**
+   * Updates (patches) this message object using the provided message data.
+   * Please note that the channel and member will not be changed as those can... realistically, not change.
+   * @param {MessageData} data
+   * @memberof DiscordMessage
+   */
+  _update (data) {
+    // IMPLEMENT ME
   }
   async edit () {
 
   }
+
+
+  async send () {
+
+  }
   async delete () {
-    
+    try {
+      const success = await this._tools.deleteMessage(this.channelId, this.id)
+      return success
+    } catch (err) {
+      console.log('Message delete failed:', err.message)
+      return false
+    }
   }
   async exists () {
 
@@ -50,7 +90,7 @@ class DiscordMessage {
   }
 
   toString () {
-
+    return `[#${this.id}] (${this.age} days ago) ${this.author.username}=>${this.channel.name}: ${this.content}`
   }
 }
 
@@ -172,6 +212,7 @@ module.exports = DiscordMessage
  * @property {string[]} mention_roles
  * @property {string} content
  * @property {string} channel_id
+ * @property {DiscordChannel} _channel
  * @property {UserData[]} mentions
  * @property {number} type
  */

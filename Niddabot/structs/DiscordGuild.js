@@ -8,7 +8,7 @@ const Collection = require('../components/Collection')
  * @typedef GuildData
  * @type {Object}
  * @property {number} mfa_level
- * @property {*[]} emojis
+ * @property {EmojiData[]} emojis
  * @property {string} application_id
  * @property {string} name
  * @property {RoleData[]} roles
@@ -41,6 +41,19 @@ const Collection = require('../components/Collection')
  * @property {string} id
  * @property {boolean} managed
  * @property {number} permissions
+ */
+
+/**
+ * @typedef EmojiData
+ * @type {Object}
+ * @property {boolean} managed
+ * @property {string} name
+ * @property {string[]} roles
+ * @property {UserData} [user]
+ * @property {boolean} require_colons
+ * @property {boolean} animated
+ * @property {string} id
+ * @property {DiscordGuild} guild
  */
 
 /**
@@ -81,19 +94,27 @@ class DiscordGuild {
     this.id = guild.id
 
     /**
-     * @type {Collection}
+     * This is a collection.
+     * @see {Collection}
+     * @type {Map<string, DiscordRole>}
      */
     this.roles = new Collection(guild.roles.map(a => [a.id, new DiscordRole(a)]))
     /**
-     * @type {Collection}
+     * This is a collection.
+     * @see {Collection}
+     * @type {Map<string, DiscordMember>}
      */
     this.members = undefined
     /**
-     * @type {Collection}
+     * This is a collection.
+     * @see {Collection}
+     * @type {Map<string, DiscordChannel>}
      */
     this.channels = undefined
     /**
-     * @type {Collection}
+     * This is a collection.
+     * @see {Collection}
+     * @type {Map<string, DiscordEmoji>}
      */
     this.emojis = guild.emojis
     /**
@@ -108,12 +129,20 @@ class DiscordGuild {
      * @type {boolean}
      */
     this.exists = undefined
+    /**
+     * This is Niddabot's Member Object.
+     * @type {DiscordMember}
+     */
+    this.me = undefined
 
     Object.defineProperty(this, 'exists', {
       get: () => { return (this.name && this.owner) }
     })
     Object.defineProperty(this, 'icon', {
       get: () => { return (this.exists) ? `https://cdn.discordapp.com/icons/${this.id}/${guild.icon}` : undefined }
+    })
+    Object.defineProperty(this, 'me', {
+      get: () => this.members.get(process.env.NIDDABOT_CLIENT_ID)
     })
   }
 

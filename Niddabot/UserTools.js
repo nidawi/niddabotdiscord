@@ -27,7 +27,8 @@ const addUser = async (discordId, niddabotAccountId = undefined, niddabotRank = 
   const user = await findUser(userInfo.discordId || discordId, false) || new User() // Fetch existing user or create a new one.
 
   if (typeof niddabotAccountId === 'string') user.niddabotAccount = niddabotAccountId // Add a link to a Niddabot Account, if any.
-  if (typeof niddabotRank === 'string') { user.niddabotRank.rankId = (await ranks.getRank(niddabotRank)).id } // Add a link to the specified Niddabot rank.
+
+  user.niddabotRank.rankId = (await ranks.getRank(niddabotRank || 'User')).id // Add a link to the specified Niddabot rank, if none, normal user.
 
   if (tokenData) user.tokenData = tokenData
   user.discordId = userInfo.discordId

@@ -1,10 +1,10 @@
 class NiddabotObject {
-/**
- * Converts seconds into minutes and seconds.
- * @example secondsToMinutes(90) => "1 min, 30 seconds"
- * @param {number} seconds The seconds to convert.
- * @returns {string}
- */
+  /**
+   * Converts seconds into minutes and seconds.
+   * @example secondsToMinutes(90) => "1 min, 30 seconds"
+   * @param {number} seconds The seconds to convert.
+   * @returns {string}
+   */
   secondsToMinutes (seconds) {
     return `${Math.floor(seconds / 60)} min, ${Math.floor(seconds % 60)} seconds`
   }
@@ -12,6 +12,7 @@ class NiddabotObject {
    * Fetches a string representation of the provided object/type.
    * @param {*} type
    * @example getType("hello") => "string"
+   * @example getType(new Date()) => "date"
    * @returns {string}
    * @memberof NiddabotObject
    */

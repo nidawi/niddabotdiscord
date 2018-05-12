@@ -1,6 +1,6 @@
 // Route for dealing with issuing user commands.
-const Router = require('../components/Router')
-const users = require('../UserTools')
+const Router = require('../../../components/Router')
+const users = require('../../../UserTools')
 
 const router = new Router()
 
