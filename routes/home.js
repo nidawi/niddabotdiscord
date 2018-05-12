@@ -65,6 +65,7 @@ router.route('/signin')
         return res.redirect('/')
       })
     } catch (err) {
+      console.log(err.stack)
       return res.render('user/login', { preset: req.body, flash: { type: 'error', messages: err.errors, message: err.message } })
     }
   })
