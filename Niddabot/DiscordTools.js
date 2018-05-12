@@ -396,7 +396,7 @@ const requestGuild = async guildId => {
   if (!guildId) return undefined
   const response = await discordRequest(`guilds/${guildId}`)
   if (response && response.status === 200) {
-    const guild = new DiscordGuild(response.data)
+    const guild = DiscordGuild ? new DiscordGuild(response.data) : require('./structs/DiscordGuild')(response.data)
     guild.owner = await requestUser(undefined, response.data.owner_id)
     guild.channels = new Collection((await requestChannels(guildId)).map(a => [a.id, Object.assign(a, { guild: guild })]))
     guild.emojis = new Collection(response.data.emojis.map(a => { return [a.id, new DiscordEmoji(Object.assign(a, { guild: guild }))] }))
