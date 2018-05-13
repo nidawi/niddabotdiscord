@@ -44,7 +44,8 @@ class DiscordMember {
    */
   getTotalPermissions () {
     if (this.isAdministrator()) return 8
-    return this.roles.values().reduce((a, b) => a | b)
+    else if (this.roles.length === 1) return this.roles.values()[0].permissions
+    else return this.roles.values().reduce((a, b) => a.permissions | b.permissions)
   }
 
   /**
@@ -64,7 +65,7 @@ class DiscordMember {
     `Member of Guild "${this.guild.name}".\n` +
     `Administrator: ${this.isAdministrator()}\n` +
     `Permissions: ${this.getTotalPermissions()}\n` +
-    `Joined at: ${this.joinedAt}`
+    `Joined at: ${this.joinedAt.toLocaleDateString()}`
   }
 }
 

@@ -141,6 +141,7 @@ const discordRequest = async (url, options) => {
         // If we get rate-limited, we wait for the specified amount of time and then try again.
         // This is not a great solution but it will have to do for now. I'll need to refactor some calls.
         // We're making way too many calls right now.
+        // Consider adding a fail-safe so that you cannot get stuck in a super long "retry_after" situation.
         console.log(`Discord Rate-limit reached. Global Limit: ${resp.global}, Retry after: ${resp.retry_after}`)
         await wait(resp.retry_after || 500)
         return discordRequest(url, options)
@@ -393,6 +394,7 @@ const requestEmoji = async (guildId, emojiId = undefined) => {
  * @returns {DiscordGuild}
  */
 const requestGuild = async (guildId, jsonFriendly = false) => {
+  console.log('requestGuild, jsonFriendly:', jsonFriendly)
   if (!guildId) return undefined
   const response = await discordRequest(`guilds/${guildId}`)
   if (response && response.status === 200) {

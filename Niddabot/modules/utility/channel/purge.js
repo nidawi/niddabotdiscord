@@ -6,12 +6,7 @@ const DiscordGuild = require('../../../structs/DiscordGuild')
 const router = new Router()
 
 router.use('*', async (route, msg, next) => {
-  /**
-   * @type {DiscordGuild}
-   */
-  route._guild = (await msg.niddabot.server).guild
-  if (!route._guild.me.hasPermission('MANAGE_MESSAGES') || !route._guild.me.hasPermission('READ_MESSAGE_HISTORY')) return next(new Error('I do not have adequate permissions to perform this action.'))
-  route._channel = route._guild.channels.get(msg.channel.id)
+  if (!msg.niddabot.guild.me.hasPermission('MANAGE_MESSAGES') || !msg.niddabot.guild.me.hasPermission('READ_MESSAGE_HISTORY')) return next(new Error('I do not have adequate permissions to perform this action.'))
   next()
 })
 
@@ -19,14 +14,14 @@ router.use('', async (route, msg, next) => {
   // This is the route for deleting messages in bulk.
   try {
     const options = {
-      amount: route.hasArgument('amount') ? helpers.validateNumber(route.getArgument('amount'), 'amount', 2, 100) : 10,
-      byUser: route.hasArgument('user') ? route._guild.members.get(route.getArgument('user')) : undefined
+      amount: route.hasArgument('amount') ? helpers.validateNumber(route.getArgument('amount'), 'amount', 2, 100) : 100,
+      byUser: route.hasArgument('user') ? msg.niddabot.guild.members.get(route.getArgument('user')) : undefined
     }
 
-    const messages = await route._channel.getMessages({ limit: options.amount })
+    const messages = await msg.niddabot.channel.getMessages({ limit: options.amount })
     if (options.amount > 2) {
-      const deleted = await route._channel.deleteMessages(messages)
-      if (deleted) msg.reply(`${deleted} messages have been deleted.`)
+      const deleted = await msg.niddabot.channel.deleteMessages(messages)
+      if (deleted && !route.hasArgument('silent')) msg.reply(`${deleted} messages have been deleted.`)
     }
   } catch (err) {
     next(err)
@@ -35,14 +30,18 @@ router.use('', async (route, msg, next) => {
 
 router.use('all', async (route, msg, next) => {
   // This route is intended to clear an entire channel.
+  try {
+    const messages = await msg.niddabot.channel.getMessages({ limit: 30 }) // Test with 10
+    msg.niddabot.channel.deleteOldMessages(messages)
+  } catch (err) { next(err) }
 })
 
 router.use(/^\d+$/, async (route, msg, next) => {
   // This is the route for deleting a specific message.
   try {
     const messages = (await Promise.all([
-      route._channel.getMessage(route.currentRoute),
-      route._channel.getMessage(msg.id)
+      msg.niddabot.channel.getMessage(route.currentRoute),
+      msg.niddabot.channel.getMessage(msg.id)
     ])).filter(Boolean)
 
     if (messages.length === 2) {

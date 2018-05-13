@@ -76,15 +76,14 @@ class DiscordChannel {
    * Deletes old messages, those that are more than two weeks old.
    * This takes quite a while due to API rate-limits.
    * @param {DiscordMessage[]} messages
-   * @param {RateLimitData} [rateLimit]
    * @memberof DiscordChannel
    */
-  async deleteOldMessages (messages, rateLimit = undefined) {
-    messages = messages.filter(a => a.age >= 14) // Filter away messages that aren't old enough.
+  async deleteOldMessages (messages) {
+    const success = messages.map(a => a.delete()).every(a => a === true)
   }
 
   /**
-   * Requests messages from this channel. Cached loaded messages into the 'messages' property.
+   * Requests messages from this channel. Caches loaded messages into the 'messages' property.
    * Fetches the 50 latest messages by default.
    * @async
    * @param {MessageRequestOptions} options
@@ -100,6 +99,13 @@ class DiscordChannel {
       }))
     }
   }
+  /**
+   * Requests a message from this channel. Caches the loaded message into the 'messages' property.
+   * @async
+   * @param {string} id
+   * @returns {DiscordMessage}
+   * @memberof DiscordChannel
+   */
   async getMessage (id) {
     const msg = await this._tools.requestMessage(this.id, id)
     if (msg) {
@@ -121,6 +127,12 @@ class DiscordChannel {
     // This is a bit more complicated than the usual permissions due to channel-level overrides and what not.
     if (member.isAdministrator()) return true
     return false // Not implemented
+  }
+
+  toString () {
+    return `\n` +
+    `Channel Name: ${this.name}\n` +
+    `Belongs to guild: ${this.guild.name}`
   }
 }
 
@@ -152,12 +164,3 @@ module.exports = DiscordChannel
  * @property {string} [after] Fetch messages AFTER this message Id.
  * @property {number} [limit=50] Messages to fetch. Max: 100. Default: 50.
  */
-
-/**
- * Optional Rate-limit data. Ensures that this method does not exceed Discord's dynamic rate limits.
- * @typedef RateLimitData
- * @type {Object}
- * @property {number} remaining Requests remaining.
- * @property {number} total Total requests available.
- * @property {number} reset Time until request limit reset, in seconds.
-  */

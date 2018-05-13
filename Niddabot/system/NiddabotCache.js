@@ -10,6 +10,8 @@ class NiddabotCache {
     this._cache = new Map()
   }
 
+  // We should implement some kind of "expiry" date so that we will automatically refresh the data every once in a while.
+  // We should also manually check gateway events and update our data when required.
   async _getServer (id) {
     const server = await servers.getNiddabotServer(undefined, id)
     if (server) {
@@ -32,8 +34,8 @@ class NiddabotCache {
     msg.niddabot = {
       server: server,
       user: user,
-      guild: undefined,
-      channel: undefined,
+      guild: server ? server.guild : undefined,
+      channel: server ? server.guild.channels.get(msg.channel.id) : undefined,
       _cache: undefined
     }
   }

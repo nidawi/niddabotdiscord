@@ -162,7 +162,7 @@ const getNiddabotAccount = async (id, jsonFriendly = false) => {
   const user = await users.getNiddabotUser(fetchedAccount.discordUser, undefined)
   account.discordUser = (user.exists) ? user : undefined
   // console.log('getNiddabotUser exists', JSON.stringify(user))
-  account.ownedServers = await Promise.all(fetchedAccount.ownedServers.map(a => servers.getNiddabotServer(a, undefined, true)))
+  account.ownedServers = await Promise.all(fetchedAccount.ownedServers.map(a => servers.getNiddabotServer(a, undefined, jsonFriendly)))
 
   return account
 }

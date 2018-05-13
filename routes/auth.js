@@ -63,7 +63,7 @@ router.route('/')
       })
 
       // Update Session
-      const fetchedAccount = await account.getNiddabotAccount(req.session.discord.id)
+      const fetchedAccount = await account.getNiddabotAccount(req.session.discord.id, true)
       if (!fetchedAccount.exists) return next(new Error(500))
       req.session.discord = fetchedAccount
 

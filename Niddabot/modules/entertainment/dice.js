@@ -12,6 +12,5 @@ module.exports = (route, msg, next) => {
     const _min = getValue(route.getArgument('min')) || 1
     const min = (_min < max) ? _min : 1
     msg.channel.send(`\`${msg.author.username} rolls the dice and scores ${(Math.floor(Math.random() * ((max + 1) - min)) + min)}! (${min}-${max})\``)
-    console.log('roll')
   }
 }
