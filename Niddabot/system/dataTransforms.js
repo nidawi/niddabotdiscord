@@ -12,8 +12,6 @@
  */
 module.exports = async msg => {
   const delegate = msg.messageContent.getArgument('delegate')
-  if (delegate) {
-    console.log(`delegate set to ${delegate}`)
-    msg._delegate = delegate
-  }
+  if (delegate) msg._delegate = delegate
+  else msg._delegate = undefined
 }

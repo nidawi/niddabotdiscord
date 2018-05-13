@@ -26,8 +26,8 @@ class NiddabotCache {
   }
 
   async apply (msg) {
-    const server = msg.guild ? (this._cache.get(`server:${msg.guild.id}`) || this._getServer(msg.guild.id)) : undefined
-    const user = this._cache.get(`user:${msg._delegate || msg.author.id}`) || this._getUser(msg._delegate || msg.author.id)
+    const server = msg.guild ? (this._cache.get(`server:${msg.guild.id}`) || await this._getServer(msg.guild.id)) : undefined
+    const user = this._cache.get(`user:${msg._delegate || msg.author.id}`) || await this._getUser(msg._delegate || msg.author.id)
 
     msg.niddabot = {
       server: server,

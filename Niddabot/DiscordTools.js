@@ -392,16 +392,16 @@ const requestEmoji = async (guildId, emojiId = undefined) => {
  * @param {string} guildId Id of the Discord Guild.
  * @returns {DiscordGuild}
  */
-const requestGuild = async guildId => {
+const requestGuild = async (guildId, jsonFriendly = false) => {
   if (!guildId) return undefined
   const response = await discordRequest(`guilds/${guildId}`)
   if (response && response.status === 200) {
-    const guild = DiscordGuild ? new DiscordGuild(response.data) : require('./structs/DiscordGuild')(response.data)
+    const guild = new DiscordGuild(response.data)
     guild.owner = await requestUser(undefined, response.data.owner_id)
-    guild.channels = new Collection((await requestChannels(guildId)).map(a => [a.id, Object.assign(a, { guild: guild })]))
-    guild.emojis = new Collection(response.data.emojis.map(a => { return [a.id, new DiscordEmoji(Object.assign(a, { guild: guild }))] }))
+    guild.channels = new Collection((await requestChannels(guildId)).map(a => [a.id, Object.assign(a, { guild: !jsonFriendly ? guild : undefined })]))
+    guild.emojis = new Collection(response.data.emojis.map(a => { return [a.id, new DiscordEmoji(Object.assign(a, { guild: !jsonFriendly ? guild : undefined }))] }))
     guild.members = new Collection((await requestMembers(guildId)).map(a => [a.user.id, Object.assign(a, {
-      guild: guild,
+      guild: !jsonFriendly ? guild : undefined,
       roles: new Collection(a.roles.map(b => [b, guild.roles.get(b)]))
     })]))
 

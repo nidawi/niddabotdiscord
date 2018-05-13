@@ -4,7 +4,6 @@ const express = require('express')
 const router = express.Router()
 
 const account = require('../Niddabot/AccountTools')
-const users = require('../Niddabot/UserTools')
 
 router.route('/')
   .get(async (req, res, next) => {
@@ -51,7 +50,7 @@ router.route('/signin')
     // Allows a user to sign in with a Niddabot Account.
     try {
       // Try to fetch an account.
-      const fetchedAccount = await account.getNiddabotAccount({ name: req.body.name, password: req.body.password })
+      const fetchedAccount = await account.getNiddabotAccount({ name: req.body.name, password: req.body.password }, true)
       if (!fetchedAccount) return next(new Error(400))
       // Now we add the user information to the current session
       req.session.regenerate(err => {

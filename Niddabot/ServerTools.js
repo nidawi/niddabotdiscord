@@ -65,13 +65,13 @@ const fetchServer = async (serverId, guildId, transform = true) => {
  * @param {string} [guildId] Id of the associated Discord Guild.
  * @returns {NiddabotServer}
  */
-const getNiddabotServer = async (id, guildId = undefined) => {
+const getNiddabotServer = async (id, guildId = undefined, jsonFriendly = false) => {
   if (!id && !guildId) return undefined
   const serverData = await fetchServer(id, guildId)
   if (!serverData) return undefined
 
   const server = new NiddabotServer(serverData)
-  server.guild = await Discord.requestGuild(guildId || server.guildId)
+  server.guild = await Discord.requestGuild((guildId || server.guildId), true)
 
   return server
 }

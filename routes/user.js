@@ -15,7 +15,7 @@ router.route('*')
   .all(async (req, res, next) => {
     try {
       // Fetch the account to use here.
-      const fetchedAccount = await accounts.getNiddabotAccount(req.session.discord.id)
+      const fetchedAccount = await accounts.getNiddabotAccount(req.session.discord.id, true)
       if (!fetchedAccount.exists) return next(new Error(404))
       req.discord = fetchedAccount
       req.session.discord = fetchedAccount

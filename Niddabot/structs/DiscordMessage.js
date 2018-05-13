@@ -1,5 +1,4 @@
 const Collection = require('../components/Collection')
-const DiscordTools = require('../DiscordTools')
 const DiscordMember = require('./DiscordMember')
 const DiscordAttachment = require('./DiscordAttachment')
 const DiscordEmoji = require('./DiscordEmoji')

@@ -154,7 +154,7 @@ const verifyDatabase = async (log = false) => {
  * @param {string} id Niddabot Account Id.
  * @returns {NiddabotAccount}
  */
-const getNiddabotAccount = async id => {
+const getNiddabotAccount = async (id, jsonFriendly = false) => {
   const fetchedAccount = (Object.getOwnPropertyNames(id).indexOf('name') === -1) ? await fetchAccountById(id) : await getAccount(id.name, id.password)
   if (!fetchAccount) return undefined
   const account = new NiddabotAccount(fetchedAccount)
@@ -162,7 +162,7 @@ const getNiddabotAccount = async id => {
   const user = await users.getNiddabotUser(fetchedAccount.discordUser, undefined)
   account.discordUser = (user.exists) ? user : undefined
   // console.log('getNiddabotUser exists', JSON.stringify(user))
-  account.ownedServers = await Promise.all(fetchedAccount.ownedServers.map(a => servers.getNiddabotServer(a, undefined)))
+  account.ownedServers = await Promise.all(fetchedAccount.ownedServers.map(a => servers.getNiddabotServer(a, undefined, true)))
 
   return account
 }
