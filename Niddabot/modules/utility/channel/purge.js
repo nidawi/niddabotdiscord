@@ -7,33 +7,31 @@ const router = new Router()
 
 router.use('*', async (route, msg, next) => {
   if (!msg.niddabot.guild.me.hasPermission('MANAGE_MESSAGES') || !msg.niddabot.guild.me.hasPermission('READ_MESSAGE_HISTORY')) return next(new Error('I do not have adequate permissions to perform this action.'))
+  else if (!msg.niddabot.user.canPerform(200)) return next(new Error('access denied.'))
   next()
 })
 
 router.use('', async (route, msg, next) => {
   // This is the route for deleting messages in bulk.
   try {
-    const options = {
-      amount: route.hasArgument('amount') ? helpers.validateNumber(route.getArgument('amount'), 'amount', 2, 100) : 100,
-      byUser: route.hasArgument('user') ? msg.niddabot.guild.members.get(route.getArgument('user')) : undefined
+    if (route.hasArgument('help')) {
+      return msg.reply(`This is the Niddabot "Channel Purge" feature. It allows you to purge (clear) a channel of messages. Due to Discord API limitations, deleting behaviour may sometimes be erratic as Discord imposes hard rate-limits which I have to respect.`)
     }
 
+    const options = {
+      amount: route.hasArgument('amount') ? helpers.validateNumber(route.getArgument('amount'), 'amount', 2, null) : 100,
+      byUser: route.hasArgument('user') ? msg.niddabot.guild.members.get(route.getArgument('user')) : undefined
+    }
+    if (route.hasArgument('user') && !options.byUser) throw new Error(`no user with the id ${route.getArgument('user')} was found.`)
+
     const messages = await msg.niddabot.channel.getMessages({ limit: options.amount })
-    if (options.amount > 2) {
-      const deleted = await msg.niddabot.channel.deleteMessages(messages)
-      if (deleted && !route.hasArgument('silent')) msg.reply(`${deleted} messages have been deleted.`)
+    if (options.amount > 1) {
+      const deleted = await msg.niddabot.channel.deleteMessages(options.byUser ? messages.filter(a => a.author.id === options.byUser.user.id) : messages)
+      if (deleted && !route.hasArgument('silent')) msg.reply(`${deleted} messages ${options.byUser ? `by ${options.byUser.user.username} ` : ''}have been deleted.`)
     }
   } catch (err) {
     next(err)
   }
-})
-
-router.use('all', async (route, msg, next) => {
-  // This route is intended to clear an entire channel.
-  try {
-    const messages = await msg.niddabot.channel.getMessages({ limit: 30 }) // Test with 10
-    msg.niddabot.channel.deleteOldMessages(messages)
-  } catch (err) { next(err) }
 })
 
 router.use(/^\d+$/, async (route, msg, next) => {

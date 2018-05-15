@@ -5,7 +5,6 @@ const NiddabotSelf = require('./structs/NiddabotSelf')
 
 const NiddabotCache = require('./system/NiddabotCache')
 const parseMessage = require('./system/messageParser')
-const applyBotData = require('./system/niddabotData')
 const dataTransformation = require('./system/dataTransforms')
 
 const discordClient = new Discord.Client()
@@ -31,6 +30,8 @@ class Niddabot {
       { path: 'channel', module: require('./modules/utility/channel') },
 
       // Entertainment
+      { path: '*', module: require('./modules/chatting'), options: { trigger: 'neither', type: 'private' } },
+      { path: '*', module: require('./modules/chatting'), options: { trigger: 'mentioned', type: 'guild' } },
       { path: 'music', module: require('./modules/entertainment/niddabot-music') },
       { path: '8ball', module: require('./modules/entertainment/magic8ball') },
       { path: 'roll', module: require('./modules/entertainment/dice') }

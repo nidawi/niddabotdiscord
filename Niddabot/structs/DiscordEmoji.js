@@ -1,4 +1,5 @@
 const DiscordGuild = require('./DiscordGuild')
+const DiscordUser = require('./DiscordUser')
 
 /**
  * @typedef UserData
@@ -39,10 +40,7 @@ class DiscordEmoji {
      * @type {string[]}
      */
     this.roles = emoji.roles
-    /**
-     * @type {UserData}
-     */
-    this.user = emoji.user
+    this.user = emoji.user ? new DiscordUser(emoji.user) : undefined
     /**
      * @type {boolean}
      */

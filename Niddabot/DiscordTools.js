@@ -4,8 +4,12 @@ const Collection = require('./components/Collection')
 const DiscordGuild = require('./structs/DiscordGuild')
 const DiscordChannel = require('./structs/DiscordChannel')
 const DiscordEmoji = require('./structs/DiscordEmoji')
+const DiscordUser = require('./structs/DiscordUser')
 // const DiscordMessage = require('./structs/DiscordMessage')
 const DiscordMember = require('./structs/DiscordMember')
+
+const RateCache = require('./components/RateCache')
+const _rateCache = new RateCache()
 
 const discordURLs = {
   authURL: 'https://discordapp.com/api/oauth2/authorize',
@@ -101,7 +105,7 @@ const wait = (delay = 500) => {
 /**
  * @param {string} url
  * @param {request} options
- * @returns {{ success: boolean, status: number, data: *}}
+ * @returns {DiscordRequestResponse}
  */
 const discordRequest = async (url, options) => {
   // Performs a complex request that can be customized as needed. There will be several "quick & dirty" request methods as well.
@@ -126,11 +130,8 @@ const discordRequest = async (url, options) => {
   try {
     console.log(`Making a ${fetchOptions.method} request to: ${fetchOptions.uri}`)
     const response = await request(fetchOptions)
-    const rateStatus = {
-      remaining: response.headers['x-ratelimit-remaining'],
-      total: response.headers['x-ratelimit-limit'],
-      reset: Math.round((new Date(response.headers['x-ratelimit-reset'] * 1000) - new Date()) / 1000)
-    }
+    const rateStatus = { remaining: response.headers['x-ratelimit-remaining'], total: response.headers['x-ratelimit-limit'], reset: Math.round((new Date(response.headers['x-ratelimit-reset'] * 1000) - new Date()) / 1000) }
+    _rateCache.set(fetchOptions.method, fetchOptions.uri, rateStatus)
     console.log(`Discord Request Status Report: rate-limit: ${rateStatus.remaining}/${rateStatus.total} - resets in ${rateStatus.reset} sec`)
     // If the request is successful.
     if (Math.floor(response.statusCode / 100) === 2) {
@@ -138,11 +139,15 @@ const discordRequest = async (url, options) => {
     } else { // If it is unsuccessful.
       if (response.statusCode === 429) {
         const resp = (response.body) ? JSON.parse(response.body) : undefined
+        console.log(`Discord Rate-limit reached. Global Limit: ${resp.global}, Retry after: ${resp.retry_after}`)
         // If we get rate-limited, we wait for the specified amount of time and then try again.
         // This is not a great solution but it will have to do for now. I'll need to refactor some calls.
         // We're making way too many calls right now.
         // Consider adding a fail-safe so that you cannot get stuck in a super long "retry_after" situation.
-        console.log(`Discord Rate-limit reached. Global Limit: ${resp.global}, Retry after: ${resp.retry_after}`)
+        if (resp.retry_after > 5000) {
+          console.log(`Discord Rate-limit is too long. Request ignored.`)
+          return undefined // If the waiting time is more than 4 seconds, we won't queue it up and return undefined instead.
+        }
         await wait(resp.retry_after || 500)
         return discordRequest(url, options)
       } else {
@@ -272,23 +277,20 @@ const testToken = async token => {
  */
 
 /**
- * d
- * @param {string} accessToken d
- * @param {string} discordId d
- * @returns {UserData}
+ * @param {string} [accessToken]
+ * @param {string} discordId
  */
-const requestUser = async (accessToken, discordId) => {
+const requestUser = async (accessToken = undefined, discordId) => {
   if (!accessToken && !discordId) return undefined
   const requestOptions = {
     headers: {
       'Authorization': (accessToken) ? createAuthorizationHeader('Bearer', accessToken) : createAuthorizationHeader()
     }
   }
-  const response = await discordRequest((accessToken) ? 'users/@me' : `users/${discordId}`, requestOptions)
+  const response = accessToken ? (await discordRequest('users/@me', requestOptions) || await discordRequest(`users/${discordId}`, requestOptions)) : await discordRequest(`users/${discordId}`, requestOptions)
   if (response && response.status === 200) {
-    return convertUserObject(response.data)
-  } else {
-    return undefined
+    return new DiscordUser(response.data)
+    // return convertUserObject(response.data)
   }
 }
 
@@ -354,7 +356,7 @@ const requestSelf = async () => {
     ])
     return {
       applicationData: convertApplicationObject(appData[0].data),
-      accountData: convertUserObject(appData[1].data)
+      accountData: new DiscordUser(appData[1].data)
     }
   } catch (err) {
     console.log('Failed to perform "requestSelf". Error: ', err.messages)
@@ -404,7 +406,8 @@ const requestGuild = async (guildId, jsonFriendly = false) => {
     guild.emojis = new Collection(response.data.emojis.map(a => { return [a.id, new DiscordEmoji(Object.assign(a, { guild: !jsonFriendly ? guild : undefined }))] }))
     guild.members = new Collection((await requestMembers(guildId)).map(a => [a.user.id, Object.assign(a, {
       guild: !jsonFriendly ? guild : undefined,
-      roles: new Collection(a.roles.map(b => [b, guild.roles.get(b)]))
+      roles: new Collection(a.roles.map(b => [b, guild.roles.get(b)])),
+      user: Object.assign(a.user, { member: a })
     })]))
 
     return guild
@@ -460,6 +463,8 @@ const requestMessages = async (channelId, options = undefined) => {
       limit: 50
     }, options)
   }
+  if (requestOptions.qs.limit < 1 || requestOptions.qs.limit > 100) requestOptions.qs.limit = 50
+
   const DiscordMessage = require('./structs/DiscordMessage')
   const response = await discordRequest(`channels/${channelId}/messages`, requestOptions)
   if (response && response.success) {
@@ -493,13 +498,12 @@ const deleteMessage = async (channelId, messageId) => {
   }
 
   const response = await discordRequest(`channels/${channelId}/messages/${messageId}`, requestOptions)
-  if (response && response.status === 204) return true
+  if (response && response.status === 204) return response
 }
 
 /**
  * @param {string} channelId
  * @param {string[]} messages
- * @returns {boolean}
  */
 const deleteMessages = async (channelId, messages) => {
   const requestOptions = {
@@ -515,11 +519,11 @@ const deleteMessages = async (channelId, messages) => {
   }
 
   const response = await discordRequest(`channels/${channelId}/messages/bulk-delete`, requestOptions)
-  if (response && response.status === 204) return true
-  else console.log(response)
+  if (response && response.status === 204) return response
 }
 
 module.exports = {
+  _rateCache: _rateCache,
   getAuthenticationString: generateAuthenticationString,
   generatePersonalAuthString: generatePersonalAuthString,
   generateStateToken: generateStateToken,
@@ -557,3 +561,20 @@ module.exports = {
  * @property {number} [limit] Fetch this many members (1-1000). Default: 1000
  * @property {string} [after] Fetch members AFTER this user Id.
  */
+
+/**
+  * @typedef DiscordRequestResponse
+  * @type {Object}
+  * @property {RateLimitData} rateStatus
+  * @property {boolean} success
+  * @property {number} status
+  * @property {Object} data
+  */
+
+/**
+  * @typedef RateLimitData
+  * @type {Object}
+  * @property {number} remaining
+  * @property {number} total
+  * @property {number} reset
+  */

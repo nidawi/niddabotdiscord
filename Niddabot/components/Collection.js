@@ -60,8 +60,14 @@ class Collection extends Map {
 
   toObject () {}
 
-  randomize (amount = 5) {
-    
+  /**
+   * Returns a random object in this Collection.
+   * @param {number} [amount=1] Amount of random objects to retrieve. Default: 1
+   * @memberof Collection
+   */
+  randomize (amount = 1) {
+    if (this.length === 0) return undefined
+    return this.values()[Math.floor(Math.random() * this.length)]
   }
 
   first (amount = 1) {}

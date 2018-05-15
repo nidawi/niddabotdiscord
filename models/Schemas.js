@@ -5,5 +5,6 @@ module.exports = {
   account: require('./AccountSchema'),
   server: require('./ServerSchema'),
   rank: require('./RankSchema'),
-  command: require('./CommandSchema')
+  command: require('./CommandSchema'),
+  channel: require('./ChannelSchema')
 }

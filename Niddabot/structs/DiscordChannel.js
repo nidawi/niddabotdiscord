@@ -35,6 +35,7 @@ class DiscordChannel {
     this.bitrate = channel.bitrate
     this.userLimit = channel.user_limit
     this.permissionOverwrites = channel.permission_overwrites
+    this.recipients = channel.recipients
 
     this._tools = require('../DiscordTools') // This is a temporary band-aid to work around the Node circular Require restriction. Hopefully this will be solved in future refactors.
 
@@ -51,52 +52,73 @@ class DiscordChannel {
   }
 
   _update () {
-
+    // (\d)|[)(.,/%*^+-]
   }
 
   /**
-   * Bulk-deletes messages from this channel. Min: 2 messages, max: 100 messages.
-   * If the messages are less than two weeks old, they will be bulk-deleted.
-   * If the messages are more than two weeks old, they will be skipped. Those need to be manually deleted by using the message's delete() function.
-   * Messages that are too old will be filtered away. Returns the amount of deleted messages.
-   * @param {DiscordMessage[]} messages
+   * @param {DiscordMessage[]|number|"all"} messages The messages to delete.
    * @memberof DiscordChannel
+   * @returns {number} the amount of deleted messages.
    */
   async deleteMessages (messages) {
-    messages = messages.filter(a => a.age < 14) // Filter away messages that are too old.
-    if (messages.length < 2 || messages.length > 100) {
-      throw new Error(`message purge (in bulk) needs at least 2 messages and at most 100.\n` +
-        `Out of the provided messages, only ${messages.length} valid message${messages.length > 1 ? 's were' : ' was'} found.`)
+    if (typeof messages === 'number' || messages === 'all') messages = await this.getMessages(messages)
+    if (!messages || messages.length < 1) throw new Error('no messages to be deleted were provided.')
+    const rate = this._tools._rateCache.get('DELETE', 'channels/messages')
+    const newMessages = messages.filter(a => a.age < 14) // Filter old messages
+    const oldMessages = messages.filter(a => a.age >= 14).slice(0, rate ? rate.total : 30) // Discord rate-limits us to 30 messages, at the moment. Therefore we cannot do any more than that. The rate limit is 2 min after 30 deletes. Yikes.
+
+    if (newMessages.length + oldMessages.length < 2) throw new Error(`message purge (in bulk) needs at least 2 messages.`)
+    // Deal with new messages that can be bulked.
+    // The Discord API requires at least 2 messages for bulk.
+    const _deletedNew = newMessages.length
+    if (newMessages.length > 1) {
+      if (!(await this._tools.deleteMessages(this.id, [].concat(...new Array(Math.ceil(newMessages.length / 100)).fill().map(a => newMessages.splice(0, 100))).map(a => a.id))).success) {
+        // This means the request failed to complete. We abort.
+        throw new Error('an error occured, and the deletion of messages failed. I apologise for the inconvenience.')
+      }
     }
-    if (await this._tools.deleteMessages(this.id, messages.map(a => a.id))) return messages.length
-    else throw new Error('I was unsuccessful in deleting the requested messages. Please try again later.')
+
+    // Deal with other messages that cannot be bulked. These have to be deleted individually.
+    // The rate-limit will hit us HARD if we're not careful here.
+    // CONSIDER: deleting our own messages has a different rate-limit. Maybe consider that in the future?
+    let _deletedOld = 0
+    if (oldMessages.length > 0) {
+      _deletedOld = (await Promise.all(oldMessages.map(a => a.delete()))).filter(Boolean).map(a => a.success).filter(a => (a)).length
+
+      if (_deletedOld === 0) throw new Error('an error occured, and the deletion of messages failed. I apologise for the inconvenience.')
+    }
+
+    return (_deletedNew + _deletedOld)
   }
 
   /**
-   * Deletes old messages, those that are more than two weeks old.
-   * This takes quite a while due to API rate-limits.
-   * @param {DiscordMessage[]} messages
-   * @memberof DiscordChannel
-   */
-  async deleteOldMessages (messages) {
-    const success = messages.map(a => a.delete()).every(a => a === true)
-  }
-
-  /**
-   * Requests messages from this channel. Caches loaded messages into the 'messages' property.
-   * Fetches the 50 latest messages by default.
+   * Requests messages from this channel. By default, fetches the latest 50 messages.
+   * You can either specify the exact amount of messages that you want to fetch by providing a number.
+   * Alternatively, you can perform a very specific search by providing queryParams.
+   * Or just specify "all". Please note that for "all", there is a cap of 10,000.
    * @async
-   * @param {MessageRequestOptions} options
+   * @throws
+   * @param {MessageRequestOptions|number|"all"} options
    * @returns {DiscordMessage[]}
    * @memberof DiscordChannel
    */
   async getMessages (options) {
-    const data = await this._tools.requestMessages(this.id, options)
-    if (data) {
-      return data.map(a => Object.assign(a, {
-        channel: this, // Add a reference to this channel.
-        member: this.guild.members.get(a.author.id) // Add a reference to the Member that sent this.
-      }))
+    if (typeof options === 'number' || options === 'all') {
+      const msgsCache = options === 'all' ? new Array(10000).fill(100) : [...new Array(Math.floor(options / 100)).fill(100), options % 100].filter(Boolean)
+      for (let i = 0; i < msgsCache.length; i++) {
+        const prevMsgs = msgsCache[i - 1]
+        if (prevMsgs && prevMsgs.length === 0) break
+        msgsCache[i] = await this.getMessages({ limit: msgsCache[i], before: prevMsgs ? prevMsgs[prevMsgs.length - 1].id : undefined })
+      }
+      return [].concat(...msgsCache.filter(a => typeof a !== 'number'))
+    } else {
+      const data = await this._tools.requestMessages(this.id, options)
+      if (data) {
+        return data.map(a => Object.assign(a, {
+          channel: this, // Add a reference to this channel.
+          member: this.guild.members.get(a.author.id) // Add a reference to the Member that sent this.
+        }))
+      }
     }
   }
   /**
@@ -132,7 +154,8 @@ class DiscordChannel {
   toString () {
     return `\n` +
     `Channel Name: ${this.name}\n` +
-    `Belongs to guild: ${this.guild.name}`
+    `Belongs to guild: ${this.guild.name}\n` +
+    `Default: ${this.guild.default.id === this.id}`
   }
 }
 
@@ -152,7 +175,18 @@ module.exports = DiscordChannel
  * @property {number} bitrate
  * @property {number} user_limit
  * @property {string[]} permission_overwrites
+ * @property {UserData[]} recipients
  * @property {DiscordGuild} guild
+ */
+
+/**
+ * @typedef UserData
+ * @type {Object}
+ * @property {string} username
+ * @property {string} discriminator
+ * @property {string} id
+ * @property {string} avatar
+ * @property {boolean} bot
  */
 
 /**

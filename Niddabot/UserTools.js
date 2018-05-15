@@ -31,7 +31,7 @@ const addUser = async (discordId, niddabotAccountId = undefined, niddabotRank = 
   user.niddabotRank.rankId = (await ranks.getRank(niddabotRank || 'User')).id // Add a link to the specified Niddabot rank, if none, normal user.
 
   if (tokenData) user.tokenData = tokenData
-  user.discordId = userInfo.discordId
+  user.discordId = userInfo.id || userInfo.discordId
 
   await user.save()
   return (transform) ? transformUser(user) : user

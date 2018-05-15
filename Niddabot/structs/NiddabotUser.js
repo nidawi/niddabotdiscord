@@ -1,4 +1,159 @@
 // Niddabot User Class Wrapper
+const DiscordUser = require('./DiscordUser')
+
+class NiddabotUser {
+/**
+ * Creates an instance of NiddabotUser.
+ * @param {UserData} user
+ * @memberof NiddabotUser
+ */
+  constructor (user) {
+    this.id = user.id
+    this.discordId = user.discordId
+    /**
+     * @type {TokenData}
+     */
+    this.tokenData = user.tokenData
+    this.customData = user.customData
+    this.rating = user.rating
+    this.points = user.points
+    this.lastSeen = user.lastSeen
+    this.niddabotStanding = user.niddabotStanding
+    /**
+     * @type {RankData}
+     */
+    this.niddabotRank = user.niddabotRank
+    this.niddabotAccount = user.niddabotAccount
+    this.niddabotServers = user.niddabotServers
+    this.status = user.status
+    this.createdAt = user.createdAt
+    this.updatedAt = user.updatedAt
+    /**
+     * @type {DiscordUser}
+     */
+    this.discordUser = undefined
+    /**
+     * Whether this user actually exists (there is an associated Discord Account).
+     * @type {boolean}
+     */
+    this.exists = undefined
+    /**
+     * Whether this user is a registered Niddabot user.
+     * @type {boolean}
+     */
+    this.registered = undefined
+    /**
+     * The url to the user's avatar (if available).
+     * @type {string}
+     */
+    this.avatar = undefined
+    /**
+     * @type {boolean}
+     */
+    this.hasToken = undefined
+    /**
+     * The amount of days remaining of this token's validity.
+     * @type {number}
+     */
+    this.tokenDaysLeft = undefined
+    /**
+     * Whether this user has a valid token (exists and not expired).
+     * @type {boolean}
+     */
+    this.hasValidToken = undefined
+    /**
+     * Gets the user's full name (if available). Username#discriminator
+     * @type {string}
+     */
+    this.fullName = undefined
+
+    Object.defineProperty(this, 'exists', {
+      get: () => { return (this.discordId !== null && this.discordId !== undefined && this.discordUser !== null && this.discordUser !== undefined) }
+    })
+    Object.defineProperty(this, 'registered', {
+      get: () => { return (this.id) }
+    })
+    Object.defineProperty(this, 'avatar', {
+      get: () => { return (this.exists) ? `https://cdn.discordapp.com/avatars/${this.discordUser.discordId}/${this.discordUser.avatar}` : undefined }
+    })
+    Object.defineProperty(this, 'hasToken', {
+      get: () => { return (this.tokenData && this.tokenData.accessToken) }
+    })
+    Object.defineProperty(this, 'tokenDaysLeft', {
+      get: () => { return (this.hasToken) ? Math.round((this.tokenData.expiresAt - new Date()) / 1000 / 60 / 60 / 24) : undefined }
+    })
+    Object.defineProperty(this, 'hasValidToken', {
+      get: () => { return (this.hasToken && this.tokenDaysLeft > 0) }
+    })
+    Object.defineProperty(this, 'fullName', {
+      get: () => { return (this.exists) ? `${this.discordUser.fullName}` : undefined }
+    })
+  }
+
+  /**
+   * Requests a token Refresh and returns the new Token.
+   * @throws Error: no token to refresh.
+   * @throws Generic Error
+   * @async
+   * @returns {TokenData}
+   * @memberof NiddabotUser
+   */
+  async refreshToken () {
+    if (!this.hasValidToken) throw new Error('you do not have an Access Token to refresh.')
+    const newToken = (await require('../UserTools').updateUserToken(this.id)).tokenData
+    if (newToken) {
+      this.tokenData = newToken
+      return newToken
+    } else throw new Error('token refresh unsuccessful.')
+  }
+  /**
+   * Requests a token revoke and returns true if successful.
+   * @returns {boolean}
+   * @async
+   * @memberof NiddabotUser
+   */
+  async revokeToken () {
+    if (!this.hasValidToken) throw new Error('you do not have an Access Token to revoke.')
+    const revokedToken = await require('../UserTools').revokeUserToken(this.id)
+    if (revokedToken) {
+      delete this.tokenData
+      return true
+    } else throw new Error('token revoke unsuccessful.')
+  }
+  async testToken () {
+    if (!this.hasValidToken) throw new Error('you do not have an Access Token.')
+    const tokenValid = await require('../DiscordTools').testToken(this.tokenData.accessToken)
+    return tokenValid
+  }
+  outranks (targetPrivilege) {
+    return this.getPrivilege() > targetPrivilege
+  }
+  canPerform (requirement) {
+    return this.getPrivilege() >= requirement
+  }
+  getPrivilege () {
+    return (this.niddabotRank) ? this.niddabotRank.privilege : 0
+  }
+  getRank () {
+    return (this.niddabotRank) ? this.niddabotRank.name : 'User'
+  }
+  getToken () {
+    const remainder = this.tokenDaysLeft
+    if (!remainder) return `no access token on record.`
+    else if (remainder <= 0) return `expired ${(remainder * -1)} day${((remainder * -1) === 1) ? '' : 's'} ago.`
+    else return `expires in ${remainder} day${(remainder === 1) ? '' : 's'}.`
+  }
+  toString (debug) {
+    if (!this.exists) return undefined
+    return (debug) ? `${JSON.stringify(this)}` : `Name: ${this.discordUser.username}\n` +
+    `Id: ${this.discordId}\n` +
+    `Registered: ${(this.registered) ? 'yes' : 'no'}\n` +
+    `Rank: ${this.getRank()}\n` +
+    ((this.registered) ? `Token: ${this.getToken()}` : '')
+  }
+}
+
+module.exports = NiddabotUser
 
 /**
  * @typedef TokenData
@@ -77,157 +232,3 @@
  * @property {boolean} requiresAuthenticated
  * @property {number} maxMembers
  */
-
-class NiddabotUser {
-/**
- * Creates an instance of NiddabotUser.
- * @param {UserData} user
- * @memberof NiddabotUser
- */
-  constructor (user) {
-    this.id = user.id
-    this.discordId = user.discordId
-    /**
-     * @type {TokenData}
-     */
-    this.tokenData = user.tokenData
-    this.customData = user.customData
-    this.rating = user.rating
-    this.points = user.points
-    this.lastSeen = user.lastSeen
-    this.niddabotStanding = user.niddabotStanding
-    /**
-     * @type {RankData}
-     */
-    this.niddabotRank = user.niddabotRank
-    this.niddabotAccount = user.niddabotAccount
-    this.niddabotServers = user.niddabotServers
-    this.status = user.status
-    this.createdAt = user.createdAt
-    this.updatedAt = user.updatedAt
-    /**
-     * @type {DiscordUserData}
-     */
-    this.discordUser = undefined
-    /**
-     * Whether this user actually exists (there is an associated Discord Account).
-     * @type {boolean}
-     */
-    this.exists = undefined
-    /**
-     * Whether this user is a registered Niddabot user.
-     * @type {boolean}
-     */
-    this.registered = undefined
-    /**
-     * The url to the user's avatar (if available).
-     * @type {string}
-     */
-    this.avatar = undefined
-    /**
-     * @type {boolean}
-     */
-    this.hasToken = undefined
-    /**
-     * The amount of days remaining of this token's validity.
-     * @type {number}
-     */
-    this.tokenDaysLeft = undefined
-    /**
-     * Whether this user has a valid token (exists and not expired).
-     * @type {boolean}
-     */
-    this.hasValidToken = undefined
-    /**
-     * Gets the user's full name (if available). Username#discriminator
-     * @type {string}
-     */
-    this.fullName = undefined
-
-    Object.defineProperty(this, 'exists', {
-      get: () => { return (this.discordId !== null && this.discordId !== undefined && this.discordUser !== null && this.discordUser !== undefined) }
-    })
-    Object.defineProperty(this, 'registered', {
-      get: () => { return (this.id) }
-    })
-    Object.defineProperty(this, 'avatar', {
-      get: () => { return (this.exists) ? `https://cdn.discordapp.com/avatars/${this.discordUser.discordId}/${this.discordUser.avatar}` : undefined }
-    })
-    Object.defineProperty(this, 'hasToken', {
-      get: () => { return (this.tokenData && this.tokenData.accessToken) }
-    })
-    Object.defineProperty(this, 'tokenDaysLeft', {
-      get: () => { return (this.hasToken) ? Math.round((this.tokenData.expiresAt - new Date()) / 1000 / 60 / 60 / 24) : undefined }
-    })
-    Object.defineProperty(this, 'hasValidToken', {
-      get: () => { return (this.hasToken && this.tokenDaysLeft > 0) }
-    })
-    Object.defineProperty(this, 'fullName', {
-      get: () => { return (this.exists) ? `${this.discordUser.username}#${this.discordUser.discriminator}` : undefined }
-    })
-  }
-
-  /**
-   * Requests a token Refresh and returns the new Token.
-   * @throws Error: no token to refresh.
-   * @throws Generic Error
-   * @async
-   * @returns {TokenData}
-   * @memberof NiddabotUser
-   */
-  async refreshToken () {
-    if (!this.hasValidToken) throw new Error('you do not have an Access Token to refresh.')
-    const newToken = (await require('../UserTools').updateUserToken(this.id)).tokenData
-    if (newToken) {
-      this.tokenData = newToken
-      return newToken
-    } else throw new Error('token refresh unsuccessful.')
-  }
-  /**
-   * Requests a token revoke and returns true if successful.
-   * @returns {boolean}
-   * @async
-   * @memberof NiddabotUser
-   */
-  async revokeToken () {
-    if (!this.hasValidToken) throw new Error('you do not have an Access Token to revoke.')
-    const revokedToken = await require('../UserTools').revokeUserToken(this.id)
-    if (revokedToken) {
-      delete this.tokenData
-      return true
-    } else throw new Error('token revoke unsuccessful.')
-  }
-  async testToken () {
-    if (!this.hasValidToken) throw new Error('you do not have an Access Token.')
-    const tokenValid = await require('../DiscordTools').testToken(this.tokenData.accessToken)
-    return tokenValid
-  }
-  outranks (targetPrivilege) {
-    return this.getPrivilege() > targetPrivilege
-  }
-  canPerform (requirement) {
-    return this.getPrivilege() >= requirement
-  }
-  getPrivilege () {
-    return (this.niddabotRank) ? this.niddabotRank.privilege : 0
-  }
-  getRank () {
-    return (this.niddabotRank) ? this.niddabotRank.name : 'User'
-  }
-  getToken () {
-    const remainder = this.tokenDaysLeft
-    if (!remainder) return `no access token on record.`
-    else if (remainder <= 0) return `expired ${(remainder * -1)} day${((remainder * -1) === 1) ? '' : 's'} ago.`
-    else return `expires in ${remainder} day${(remainder === 1) ? '' : 's'}.`
-  }
-  toString (debug) {
-    if (!this.exists) return undefined
-    return (debug) ? `${JSON.stringify(this)}` : `Name: ${this.discordUser.username}\n` +
-    `Id: ${this.discordId}\n` +
-    `Registered: ${(this.registered) ? 'yes' : 'no'}\n` +
-    `Rank: ${this.getRank()}\n` +
-    ((this.registered) ? `Token: ${this.getToken()}` : '')
-  }
-}
-
-module.exports = NiddabotUser

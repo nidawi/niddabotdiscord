@@ -6,6 +6,7 @@ const NiddabotServer = require('../structs/NiddabotServer')
 const NiddabotUser = require('../structs/NiddabotUser')
 const DiscordGuild = require('../structs/DiscordGuild')
 const DiscordChannel = require('../structs/DiscordChannel')
+const DiscordMember = require('../structs/DiscordMember')
 
 /**
  * @typedef routeData
@@ -50,7 +51,7 @@ class Router {
           }
 
           if (currentModule.type === 'router') {
-            await currentModule.module._route(data, routeData, next)
+            await currentModule.module._route(data, routeData, next, currentModule.options)
           } else {
             await currentModule.module(routeData, data, next) // Execute the current module
             resolve(data) // Resolve. This won't occur if the next method is called from the module.
@@ -96,6 +97,7 @@ class Router {
         case 'mentioned': if (!data.isMentioned) { return false }; break
         case 'command': if (!data.isCommand) { return false }; break
         case 'either': if (!data.isMentioned && !data.isCommand) { return false }; break
+        case 'neither': if (data.isMentioned || data.isCommand) { return false }; break
         default: break // Any other input will be interpreted as "any"
       }
 
@@ -111,9 +113,13 @@ class Router {
       return result
     })
   }
-  async _route (data, route = undefined, next = undefined) {
+  async _route (data, route = undefined, next = undefined, options = undefined) {
     try {
       console.log(`Wait Start: ${(route) ? route.message : data.content}, is sub-route: ${(route)}`)
+
+      // Sub-routers inherit the parent's options.
+      if (options) { for (let i = 0; i < this._modules.length; i++) this._modules[i].options = options }
+
       await this._process(this._getModules(route || data.messageContent), route || data.messageContent, data)
       console.log(`Wait Done: ${(route) ? route.message : data.content}`)
       if (next) {
@@ -223,9 +229,10 @@ module.exports = Router
 /**
  * @typedef NiddabotData
  * @type {Object}
- * @property {NiddabotServer} server
- * @property {NiddabotUser} user
- * @property {DiscordGuild} [guild]
+ * @property {NiddabotServer} server This is the Niddabot Server object. It contains the Discord Guild object etc.
+ * @property {NiddabotUser} user This is the Niddabot User object. It contains the Discord User object.
+ * @property {DiscordGuild} [guild] Quick-access to Discord Guild (if server is present).
+ * @property {DiscordMember} member
  * @property {DiscordChannel} channel
  * @property {NiddabotCache} _cache
  */

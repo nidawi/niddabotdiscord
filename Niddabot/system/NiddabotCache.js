@@ -21,6 +21,7 @@ class NiddabotCache {
   }
   async _getUser (id) {
     const user = await users.getNiddabotUser(undefined, id)
+
     if (user) {
       this._cache.set(`user:${id}`, user)
       return user
@@ -34,6 +35,7 @@ class NiddabotCache {
     msg.niddabot = {
       server: server,
       user: user,
+      member: server ? server.guild.members.get(user.discordId) : undefined,
       guild: server ? server.guild : undefined,
       channel: server ? server.guild.channels.get(msg.channel.id) : undefined,
       _cache: undefined

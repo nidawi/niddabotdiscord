@@ -2,6 +2,7 @@ const DiscordChannel = require('./DiscordChannel')
 const DiscordEmoji = require('./DiscordEmoji')
 const DiscordMember = require('./DiscordMember')
 const DiscordRole = require('./DiscordRole')
+const DiscordUser = require('./DiscordUser')
 const Collection = require('../components/Collection')
 
 /**
@@ -118,7 +119,7 @@ class DiscordGuild {
      */
     this.emojis = guild.emojis
     /**
-     * @type {UserData}
+     * @type {DiscordUser}
      */
     this.owner = guild.owner_id
     /**
@@ -134,9 +135,14 @@ class DiscordGuild {
      * @type {DiscordMember}
      */
     this.me = undefined
+    /**
+     * This is the guild's default channel.
+     * @type {DiscordChannel}
+     */
+    this.default = undefined
 
     Object.defineProperty(this, 'exists', {
-      get: () => { return (this.name && this.owner) }
+      get: () => (this.name && this.owner)
     })
     Object.defineProperty(this, 'icon', {
       get: () => { return (this.exists) ? `https://cdn.discordapp.com/icons/${this.id}/${guild.icon}` : undefined }
@@ -144,6 +150,7 @@ class DiscordGuild {
     Object.defineProperty(this, 'me', {
       get: () => this.members.get(process.env.NIDDABOT_CLIENT_ID)
     })
+    Object.defineProperty(this, 'default', { get: () => this.channels.get(this.systemChannel) })
   }
 
   getMemberHighestRole (userId) {
@@ -165,7 +172,7 @@ class DiscordGuild {
     return `--- Guild Info ---\n` +
     `Name: ${this.name}\n` +
     `Region: ${this.region}\n` +
-    `Owner: ${this.owner.username}\n` +
+    `Owner: ${this.owner.fullName}\n` +
     `Channels: ${this.channels.length}\n` +
     `Members: ${this.members.length}`
   }

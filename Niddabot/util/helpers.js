@@ -10,8 +10,16 @@ const secondsToMinutes = (seconds) => {
 const _validateNumber = (value, name = 'value', min = 0, max = 500) => {
   const number = parseFloat(value)
   if (!number || isNaN(number)) throw new Error(`invalid value type for ${name}.`)
-  else if (number < (min || 0) || number > (max || Number.MAX_SAFE_INTEGER)) throw new Error(`${number} is not a valid value for ${name}. The value has to be between ${min || 0} and ${max || Number.MAX_SAFE_INTEGER}.`)
-  else return true
+  else if (min && max) {
+    if (number < (min || 0) || number > (max || Number.MAX_SAFE_INTEGER)) throw new Error(`${number} is not a valid value for ${name}. The value has to be between ${min || 0} and ${max || Number.MAX_SAFE_INTEGER}.`)
+    else return true
+  } else if (min && !max) {
+    if (number < (min || 0)) throw new Error(`${number} is not a valid value for ${name}. The value has to be above ${min || 0}.`)
+    else return true
+  } else if (max && !min) {
+    if (number > (max || Number.MAX_SAFE_INTEGER)) throw new Error(`${number} is not a valid value for ${name}. The value has to be below ${max || Number.MAX_SAFE_INTEGER}.`)
+    else return true
+  } else return true
 }
 const validateNumber = (value, name = 'value', min = 0, max = 500) => {
   if (_validateNumber(value, name, min, max)) return parseFloat(value)

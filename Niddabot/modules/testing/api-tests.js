@@ -5,18 +5,25 @@ const helpers = require('../../util/helpers')
 
 const router = new Router()
 
+router.use('rates', (route, msg, next) => {
+  if (route.parts[0] === 'all') msg.reply(JSON.stringify(discord._rateCache.entries()))
+  else msg.reply(JSON.stringify(discord._rateCache.get(route.parts[0], route.parts[1])))
+})
 router.use('message', async (route, msg, next) => {
   // REMEMBER: IMPLEMENT CURRENT ROUTE SO THAT WE CAN ACCESS WHAT THE REGEX MATCHED
-  switch (route.parts[0]) {
-    case 'get':
-      const messages = await discord.requestMessages(msg.channel.id, { limit: 2 })
-      msg.reply(`Here's what I found:\n` +
-      messages.map(a => `${a.author.username} said "${a.content}" at ${a.timestamp.toLocaleString()}.`).join('\n'))
-      break
-    case 'delete':
-      break
-    default: msg.reply(`unknown testing item "${route.parts[0]}".`)
-  }
+  try {
+    switch (route.parts[0]) {
+      case 'get':
+        const messages = await msg.niddabot.channel.getMessages(route.getArgument('amount') || 2)
+        msg.reply(`I found a total of ${messages.length} messages.\n` +
+        `First message: ${messages[0].toString()}\n` +
+        `Last message: ${messages[messages.length - 1].toString()}`)
+        break
+      case 'delete':
+        break
+      default: msg.reply(`unknown testing item "${route.parts[0]}".`)
+    }
+  } catch (err) { next(err) }
 })
 
 module.exports = router

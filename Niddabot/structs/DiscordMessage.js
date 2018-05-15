@@ -2,6 +2,7 @@ const Collection = require('../components/Collection')
 const DiscordMember = require('./DiscordMember')
 const DiscordAttachment = require('./DiscordAttachment')
 const DiscordEmoji = require('./DiscordEmoji')
+const DiscordUser = require('./DiscordUser')
 const DiscordChannel = require('./DiscordChannel')
 
 class DiscordMessage {
@@ -26,7 +27,7 @@ class DiscordMessage {
     this.id = message.id
     this.pinned = message.pinned
     this.edited_timestamp = (message.edited_timestamp) ? new Date(message.edited_timestamp) : undefined
-    this.author = message.author
+    this.author = new DiscordUser(message.author)
     this.mention_roles = message.mention_roles
     this.content = message.content
     this.mentions = message.mentions
@@ -89,7 +90,7 @@ class DiscordMessage {
   }
 
   toString () {
-    return `[#${this.id}] (${this.age} days ago) ${this.author.username}=>${this.channel.name}: ${this.content}`
+    return `[#${this.id}] (${this.age} days ago) ${this.author.username}=>${this.channel.name}: "${this.content}" {${this.reactions.length} reactions}`
   }
 }
 

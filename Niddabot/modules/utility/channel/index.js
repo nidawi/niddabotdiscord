@@ -4,13 +4,11 @@ const Router = require('../../../components/Router')
 const router = new Router()
 
 router.use('*', (route, msg, next) => {
-  // The channel route requires base permissions.
-  next()
+  if (!msg.niddabot.channel) return next(new Error('channel was not found.'))
+  else next()
 })
-router.use('', (route, msg, next) => {
-  const channel = msg.niddabot.channel
-  msg.reply(channel.toString())
-})
+
+router.use('', (route, msg, next) => msg.reply(msg.niddabot.channel.toString()))
 
 // IMPLEMENT MESSAGE PURGE!!!!!!
 router.use('purge', require('./purge'))

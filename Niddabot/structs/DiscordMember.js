@@ -1,6 +1,7 @@
 const Collection = require('../components/Collection')
 const DiscordRole = require('./DiscordRole')
 const DiscordGuild = require('./DiscordGuild')
+const DiscordUser = require('./DiscordUser')
 const helpers = require('../util/permissions')
 
 class DiscordMember {
@@ -11,7 +12,7 @@ class DiscordMember {
    */
   constructor (member) {
     this.nick = (member.nick) ? member.nick : undefined
-    this.user = member.user
+    this.user = new DiscordUser(member.user)
     this.mute = member.mute
     this.deaf = member.deaf
     this.joinedAt = (member.joined_at) ? new Date(member.joined_at) : undefined
