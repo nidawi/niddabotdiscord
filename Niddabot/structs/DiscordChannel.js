@@ -1,6 +1,9 @@
+/* eslint-disable no-unused-vars */
 const DiscordGuild = require('./DiscordGuild')
 const DiscordMember = require('./DiscordMember')
 const DiscordMessage = require('./DiscordMessage')
+const DiscordWebhook = require('./DiscordWebhook')
+/* eslint-enable no-unused-vars */
 
 /**
   * Converts a numbered Type into a string representation.
@@ -46,32 +49,37 @@ class DiscordChannel {
     this.messages = new Map()
 
     /**
+     * @type {Map<string, DiscordWebhook>}
+     */
+    this.webhooks = undefined
+
+    /**
      * @type {DiscordGuild}
      */
     this.guild = channel.guild
   }
 
-  _update () {
-    // (\d)|[)(.,/%*^+-]
-  }
+  _update () {}
 
   /**
+   * Deletes messages from the channel. Returns the amount of deleted messages.
    * @param {DiscordMessage[]|number|"all"} messages The messages to delete.
+   * @param {"new"|"old"} [filter] Optional filter.
    * @memberof DiscordChannel
    * @returns {number} the amount of deleted messages.
    */
-  async deleteMessages (messages) {
+  async deleteMessages (messages, filter = undefined) {
     if (typeof messages === 'number' || messages === 'all') messages = await this.getMessages(messages)
     if (!messages || messages.length < 1) throw new Error('no messages to be deleted were provided.')
     const rate = this._tools._rateCache.get('DELETE', 'channels/messages')
     const newMessages = messages.filter(a => a.age < 14) // Filter old messages
     const oldMessages = messages.filter(a => a.age >= 14).slice(0, rate ? rate.total : 30) // Discord rate-limits us to 30 messages, at the moment. Therefore we cannot do any more than that. The rate limit is 2 min after 30 deletes. Yikes.
 
-    if (newMessages.length + oldMessages.length < 2) throw new Error(`message purge (in bulk) needs at least 2 messages.`)
+    if ((newMessages.length + oldMessages.length) < 2) throw new Error(`message purge (in bulk) needs at least 2 messages.`)
     // Deal with new messages that can be bulked.
     // The Discord API requires at least 2 messages for bulk.
     const _deletedNew = newMessages.length
-    if (newMessages.length > 1) {
+    if (newMessages.length > 1 && filter !== 'old') {
       if (!(await this._tools.deleteMessages(this.id, [].concat(...new Array(Math.ceil(newMessages.length / 100)).fill().map(a => newMessages.splice(0, 100))).map(a => a.id))).success) {
         // This means the request failed to complete. We abort.
         throw new Error('an error occured, and the deletion of messages failed. I apologise for the inconvenience.')
@@ -82,7 +90,7 @@ class DiscordChannel {
     // The rate-limit will hit us HARD if we're not careful here.
     // CONSIDER: deleting our own messages has a different rate-limit. Maybe consider that in the future?
     let _deletedOld = 0
-    if (oldMessages.length > 0) {
+    if (oldMessages.length > 0 && filter !== 'new') {
       _deletedOld = (await Promise.all(oldMessages.map(a => a.delete()))).filter(Boolean).map(a => a.success).filter(a => (a)).length
 
       if (_deletedOld === 0) throw new Error('an error occured, and the deletion of messages failed. I apologise for the inconvenience.')
@@ -95,7 +103,7 @@ class DiscordChannel {
    * Requests messages from this channel. By default, fetches the latest 50 messages.
    * You can either specify the exact amount of messages that you want to fetch by providing a number.
    * Alternatively, you can perform a very specific search by providing queryParams.
-   * Or just specify "all". Please note that for "all", there is a cap of 10,000.
+   * Or just specify "all". Please note that for "all", there is a cap of 100,000.
    * @async
    * @throws
    * @param {MessageRequestOptions|number|"all"} options
@@ -104,7 +112,7 @@ class DiscordChannel {
    */
   async getMessages (options) {
     if (typeof options === 'number' || options === 'all') {
-      const msgsCache = options === 'all' ? new Array(10000).fill(100) : [...new Array(Math.floor(options / 100)).fill(100), options % 100].filter(Boolean)
+      const msgsCache = options === 'all' ? new Array(100000).fill(100) : [...new Array(Math.floor(options / 100)).fill(100), options % 100].filter(Boolean)
       for (let i = 0; i < msgsCache.length; i++) {
         const prevMsgs = msgsCache[i - 1]
         if (prevMsgs && prevMsgs.length === 0) break
@@ -121,6 +129,21 @@ class DiscordChannel {
       }
     }
   }
+
+  /**
+   * Gets all messages and sorts them based on whether they're old (older than 14 days) or newer than 14 days.
+   * @memberof DiscordChannel
+   * @returns {{ allMessages: DiscordMessage[], oldMessages: DiscordMessage[], newMessages: DiscordMessage[] }}
+   */
+  async getSortedMessages () {
+    const messages = await this.getMessages('all')
+    return {
+      allMessages: messages,
+      newMessages: messages.filter(a => a.age < 14),
+      oldMessages: messages.filter(a => a.age >= 14)
+    }
+  }
+
   /**
    * Requests a message from this channel. Caches the loaded message into the 'messages' property.
    * @async
@@ -129,8 +152,9 @@ class DiscordChannel {
    * @memberof DiscordChannel
    */
   async getMessage (id) {
-    const msg = await this._tools.requestMessage(this.id, id)
+    const msg = this.messages.get(id) || await this._tools.requestMessage(this.id, id)
     if (msg) {
+      this.messages.set(id, msg)
       msg.channel = this // Add a reference to this channel.
       msg.member = this.guild.members.get(msg.author.id) // Add a reference to the Member that sent this.
       return msg
@@ -151,11 +175,21 @@ class DiscordChannel {
     return false // Not implemented
   }
 
+  /**
+   * Returns a string representation of this Channel.
+   * @returns {string}
+   * @memberof DiscordChannel
+   */
   toString () {
     return `\n` +
     `Channel Name: ${this.name}\n` +
+    `Type: ${this.type}\n` +
+    `Webhooks: ${this.webhooks.size}\n` +
     `Belongs to guild: ${this.guild.name}\n` +
     `Default: ${this.guild.default.id === this.id}`
+  }
+  toShortString () {
+    return `${this.name} (${this.id}) [${this.type}]`
   }
 }
 

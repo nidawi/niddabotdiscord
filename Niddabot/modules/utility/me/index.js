@@ -3,9 +3,12 @@ const Router = require('../../../components/Router')
 
 const router = new Router()
 
+router.use('*', (route, msg, next) => {
+  if (!msg.niddabot.user || !msg.niddabot.user.exists) return next(new Error('somehow, it seems that you do not exist.'))
+  else return next()
+})
 router.use('', async (route, msg, next) => {
-  const answer = (await msg.niddabot.user).toString(msg.messageContent.getArgument('debug') === true)
-  if (answer) msg.reply(`YOU => \n${answer}`)
+  msg.channel.send(route.insertBlock(msg.niddabot.user.toString(false)))
 })
 
 const tokenRouter = new Router()

@@ -20,7 +20,7 @@ router.route('*')
       req.discord = fetchedAccount
       req.session.discord = fetchedAccount
       if (fetchedAccount.discordUser) {
-        req.session.discord._token = fetchedAccount.discordUser.getToken()
+        req.session.discord._token = fetchedAccount.discordUser.getTokenShortString()
       }
       res.locals.discord = req.session.discord
       return next()

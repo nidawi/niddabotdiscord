@@ -6,6 +6,7 @@ router.use('*', (route, msg, next) => {
   msg.reply('route ALL path!')
   next()
 })
+
 router.use('', (route, msg, next) => {
   msg.reply('route base path!')
   msg.reply(`${router.getUsedPaths().join(', ')}`)
@@ -23,9 +24,11 @@ router.use(['test3', 'test4'], (route, msg, next) => {
 router.use(/&{3}/, async (route, msg, next) => {
   msg.reply('Regexp successful!')
 })
+
 // CURRENT ROUTE TEST -- NEEDS MORE TESTING
 router.use(/\w+/, (route, msg, next) => {
   // This should return whatever the regexp matched.
+  if (['inner', 'dual', 'type'].includes(route.currentRoute)) return next()
   msg.reply(`current route is: ${route.currentRoute}`)
 })
 
@@ -43,5 +46,18 @@ innerRouter.use('*', (route, msg, next) => {
   msg.reply('INNER ROUTER TRIGGERED!')
 })
 router.use('inner', innerRouter)
+
+const dualRouter = new Router()
+dualRouter.use('*', (route, msg, next) => {
+  msg.reply(`Dual: all. Current Route: ${route.currentRoute}, Parts: ${route.parts.join(', ')}`)
+  next()
+})
+dualRouter.use('', (route, msg, next) => {
+  msg.reply(`Dual: base. Current Route: ${route.currentRoute}, Parts: ${route.parts.join(', ')}`)
+})
+dualRouter.use('awd', (route, msg, next) => {
+  msg.reply(`Dual: awd. Current Route: ${route.currentRoute}, Parts: ${route.parts.join(', ')}`)
+})
+router.use('dual', dualRouter)
 
 module.exports = router

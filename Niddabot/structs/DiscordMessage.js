@@ -1,9 +1,12 @@
+/* eslint-disable no-unused-vars */
 const Collection = require('../components/Collection')
 const DiscordMember = require('./DiscordMember')
 const DiscordAttachment = require('./DiscordAttachment')
+const DiscordEmbed = require('./DiscordEmbed')
 const DiscordEmoji = require('./DiscordEmoji')
 const DiscordUser = require('./DiscordUser')
 const DiscordChannel = require('./DiscordChannel')
+/* eslint-enable no-unused-vars */
 
 class DiscordMessage {
   /**
@@ -21,10 +24,14 @@ class DiscordMessage {
      */
     this.attachments = (message.attachments && message.attachments.length > 0) ? new Collection(message.attachments.map(a => { return [a.id, new DiscordAttachment(a)] })) : []
     this.tts = message.tts
-    this.embeds = message.embeds
+    /**
+     * @type {DiscordEmbed[]}
+     */
+    this.embeds = message.embeds && message.embeds.length > 0 ? message.embeds.map(a => new DiscordEmbed(a)) : []
     this.timestamp = new Date(message.timestamp)
     this.mention_everyone = message.mention_everyone
     this.id = message.id
+    this.webhook_id = message.webhook_id
     this.pinned = message.pinned
     this.edited_timestamp = (message.edited_timestamp) ? new Date(message.edited_timestamp) : undefined
     this.author = new DiscordUser(message.author)
@@ -96,63 +103,6 @@ class DiscordMessage {
 
 module.exports = DiscordMessage
 
-
-
-/*
-{
-    "reactions": [
-      {
-        "count": 1,
-        "me": false,
-        "emoji": {
-            "animated": false,
-            "id": "434778689620803584",
-            "name": "boatyVV"
-        }
-      }
-    ],
-    "attachments": [
-        {
-            "url": "https://cdn.discordapp.com/attachments/426866271770902528/443760928886882305/trumpgif.gif",
-            "proxy_url": "https://media.discordapp.net/attachments/426866271770902528/443760928886882305/trumpgif.gif",
-            "filename": "trumpgif.gif",
-            "width": 397,
-            "height": 263,
-            "id": "443760928886882305",
-            "size": 2679
-        }
-    ],
-    "tts": false,
-    "embeds": [],
-    "timestamp": "2018-05-09T13:07:30.242000+00:00",
-    "mention_everyone": false,
-    "id": "443760929373683712",
-    "pinned": false,
-    "edited_timestamp": null,
-    "author": {
-        "username": "Nidawi 💕",
-        "discriminator": "1337",
-        "id": "230161739285659648",
-        "avatar": "a_74dd49c1a7d3b59f0aea8d560500350a"
-    },
-    "mention_roles": [
-        "435619208525512715"
-    ],
-    "content": "<@425724719333900289>",
-    "channel_id": "426866271770902528",
-    "mentions": [
-        {
-            "username": "niddabot",
-            "discriminator": "2995",
-            "bot": true,
-            "id": "425724719333900289",
-            "avatar": "2a1b188c8933367e9995d882e8eea595"
-        }
-    ],
-    "type": 0
-}
-*/
-
 /**
  * @typedef UserData
  * @type {Object}
@@ -197,14 +147,35 @@ module.exports = DiscordMessage
  */
 
 /**
+ * @typedef ThumbnailData
+ * @type {Object}
+ * @property {string} url
+ * @property {string} width
+ * @property {string} proxy_url
+ * @property {number} height
+ */
+
+/**
+ * @typedef EmbedData
+ * @type {Object}
+ * @property {string} description
+ * @property {string} title
+ * @property {string} url
+ * @property {number} color
+ * @property {string} type
+ * @property {ThumbnailData} thumbnail
+ */
+
+/**
  * @typedef MessageData
  * @type {Object}
  * @property {EmojiData[]} reactions
  * @property {AttachmentData[]} attachments
  * @property {boolean} tts
- * @property {*[]} embeds
+ * @property {EmbedData[]} embeds
  * @property {Date} timestamp
  * @property {boolean} mention_everyone
+ * @property {string} webhook_id
  * @property {string} id
  * @property {boolean} pinned
  * @property {Date} edited_timestamp

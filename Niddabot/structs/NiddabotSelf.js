@@ -49,7 +49,7 @@ class NiddabotSelf extends NiddabotObject {
     /**
      * @type {boolean}
      */
-    this.devMode = false
+    this.devMode = true
     /**
      * @type {DiscordGuild}
      */

@@ -11,7 +11,7 @@ router.use('*', async (route, msg, next) => {
 
 router.use(/\d+/, async (route, msg, next) => {
   const user = await users.getNiddabotUser(undefined, route.parts[0])
-  if (user.exists) msg.reply(`here's what I found: ${user.discordUser.username}`)
+  if (user.exists) msg.channel.send(route.insertBlock(user.toString(false)))
   else msg.reply('I did not find anyone with that id.')
 })
 

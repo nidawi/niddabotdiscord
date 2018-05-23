@@ -57,7 +57,7 @@ router.route('/signin')
         if (err) return next(new Error(500))
         req.session.discord = fetchedAccount
         if (fetchedAccount.discordUser) {
-          req.session.discord._token = fetchedAccount.discordUser.getToken()
+          req.session.discord._token = fetchedAccount.discordUser.getTokenShortString()
         }
 
         req.session.flash = { messages: [{ type: 'success', message: `Welcome ${fetchedAccount.name}!` }] }

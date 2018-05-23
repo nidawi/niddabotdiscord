@@ -1,16 +1,4 @@
 // Tools for Niddabot User Accounts.
-
-/**
- * @typedef TokenData
- * @type {Object}
- * @property {string} accessToken
- * @property {string} tokenType
- * @property {Date} lastRequested
- * @property {Date} expiresAt
- * @property {string} refreshToken
- * @property {string[]} scope
- */
-
 const User = require('../models/Schemas').user
 const NiddabotUser = require('./structs/NiddabotUser')
 const discord = require('./DiscordTools')
@@ -28,7 +16,8 @@ const addUser = async (discordId, niddabotAccountId = undefined, niddabotRank = 
 
   if (typeof niddabotAccountId === 'string') user.niddabotAccount = niddabotAccountId // Add a link to a Niddabot Account, if any.
 
-  user.niddabotRank.rankId = (await ranks.getRank(niddabotRank || 'User')).id // Add a link to the specified Niddabot rank, if none, normal user.
+  const availableRanks = (await ranks.getRanks()).map(a => a.name) // Verify that the provided rank exists.
+  user.niddabotRank.rankId = (await ranks.getRank(availableRanks.includes(niddabotRank) ? niddabotRank : 'User')).id // Add a link to the specified Niddabot rank, if none, normal user.
 
   if (tokenData) user.tokenData = tokenData
   user.discordId = userInfo.id || userInfo.discordId
@@ -58,13 +47,14 @@ const updateUserToken = async (id, transform = true) => {
 /**
  * Revokes the Access Token associated with the provided Niddabot User / Discord User Id.
  * @param {string} id Niddabot User / Discord User Id.
- * @returns {boolean}
+ * @param {boolean} onlyRemove Whether the token should only be removed from this user, without sending a revoke request.
+ * @returns {boolean} true upon success, other undefined.
  */
-const revokeUserToken = async id => {
+const revokeUserToken = async (id, onlyRemove = false) => {
   const user = await findUser(id, false) || await getUser(id, false)
   if (user && user.tokenData) {
-    const revokeSuccessful = await discord.revokeToken(user.tokenData.accessToken)
-    if (revokeSuccessful) {
+    const revokeSuccessful = !onlyRemove ? await discord.revokeToken(user.tokenData.accessToken) : undefined
+    if (revokeSuccessful || onlyRemove) {
       user.tokenData = undefined
 
       await user.save()
@@ -151,6 +141,17 @@ const updateUser = (id, newData) => {
     })
   })
 }
+
+/**
+ * @typedef TokenData
+ * @type {Object}
+ * @property {string} accessToken
+ * @property {string} tokenType
+ * @property {Date} lastRequested
+ * @property {Date} expiresAt
+ * @property {string} refreshToken
+ * @property {string[]} scope
+ */
 
 /**
  * @typedef UserRankData

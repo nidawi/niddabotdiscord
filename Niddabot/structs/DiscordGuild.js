@@ -1,9 +1,11 @@
+/* eslint-disable no-unused-vars */
 const DiscordChannel = require('./DiscordChannel')
 const DiscordEmoji = require('./DiscordEmoji')
 const DiscordMember = require('./DiscordMember')
 const DiscordRole = require('./DiscordRole')
 const DiscordUser = require('./DiscordUser')
 const Collection = require('../components/Collection')
+/* eslint-enable no-unused-vars */
 
 /**
  * @typedef GuildData
@@ -64,6 +66,7 @@ const Collection = require('../components/Collection')
  * @property {string} discriminator
  * @property {string} id
  * @property {string} avatar
+ * @property {boolean} bot
  */
 
 /**
@@ -99,7 +102,7 @@ class DiscordGuild {
      * @see {Collection}
      * @type {Map<string, DiscordRole>}
      */
-    this.roles = new Collection(guild.roles.map(a => [a.id, new DiscordRole(a)]))
+    this.roles = guild.roles
     /**
      * This is a collection.
      * @see {Collection}
@@ -151,16 +154,6 @@ class DiscordGuild {
       get: () => this.members.get(process.env.NIDDABOT_CLIENT_ID)
     })
     Object.defineProperty(this, 'default', { get: () => this.channels.get(this.systemChannel) })
-  }
-
-  getMemberHighestRole (userId) {
-    /**
-     * @type {DiscordMember}
-     */
-    const member = this.members.get(userId)
-    if (member) {
-
-    }
   }
 
   /**

@@ -8,6 +8,7 @@ class DiscordUser {
     this.username = user.username
     this.mfaEnabled = user.mfa_enabled
     this.id = user.id
+    this.bot = user.bot
     this.discordId = user.id
     this.avatar = user.avatar
     this.discriminator = user.discriminator
@@ -28,6 +29,13 @@ class DiscordUser {
 
     Object.defineProperty(this, 'fullName', { get: () => `${this.username}#${this.discriminator}` })
   }
+
+  /**
+   * Returns a string used to mention this user.
+   */
+  mention () {
+    return `<@${this.id}>`
+  }
 }
 
 module.exports = DiscordUser
@@ -38,6 +46,7 @@ module.exports = DiscordUser
  * @property {string} username
  * @property {boolean} mfa_enabled
  * @property {string} id
+ * @property {boolean} bot
  * @property {string} avatar
  * @property {string} discriminator
  * @property {boolean} verified

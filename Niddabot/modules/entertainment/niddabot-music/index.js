@@ -80,8 +80,10 @@ router.use(['join', 'leave'], async (route, msg, next) => {
 })
 
 router.use('join', async (route, msg, next) => {
+  // Join needs to look for voice channels, not just channels
   const target = route.getArgument('channel') || route.parts[0]
-  const voiceChannel = (target) ? (msg.guild.channels.get(target) || msg.guild.channels.find('name', target)) || msg.member.voiceChannel : msg.member.voiceChannel
+
+  const voiceChannel = (target) ? (msg.guild.channels.get(target) || msg.guild.channels.find(g => g.name === target && g.type === 'voice')) || msg.member.voiceChannel : msg.member.voiceChannel
   const feedback = route.getArgument('feedback')
   const feedbackChannel = (feedback) ? (msg.guild.channels.get(feedback) || msg.guild.channels.find('name', feedback)) || msg.channel : msg.channel
 
@@ -144,7 +146,7 @@ settingsRouter.use('', (route, msg, next) => {
   msg.reply(msg.session.niddabotMusic.getSettings())
 })
 settingsRouter.use('set', async (route, msg, next) => {
-  if (!(await msg.niddabot.user).canPerform(200)) return next(new Error('you are not authorized to change my settings.'))
+  if (!msg.niddabot.user.canPerform(200)) return next(new Error('you are not authorized to change my settings.'))
   const newValue = route.parts[1]
   if (!newValue) next(new Error('you must specify a new value.'))
   switch (route.parts[0]) {

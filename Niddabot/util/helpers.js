@@ -41,10 +41,26 @@ const _convertBoolean = value => {
   }
 }
 
+const wait = (delay = 500) => {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => { resolve() }, delay)
+  })
+}
+
+const errorDevourer = cb => {
+  try {
+    return cb()
+  } catch (err) {
+    return undefined
+  }
+}
+
 module.exports = {
   secondsToMinutes: secondsToMinutes,
   validateNumber: validateNumber,
   _validateNumber: _validateNumber,
   _validateBoolean: _validateBoolean,
-  _convertBoolean: _convertBoolean
+  _convertBoolean: _convertBoolean,
+  wait: wait,
+  errorDevourer: errorDevourer
 }

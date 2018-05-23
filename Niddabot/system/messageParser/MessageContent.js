@@ -108,6 +108,9 @@ class MessageContent {
   getParts (index = 0) {
     return this.parts.slice(index).join(' ')
   }
+  insertBlock (text) {
+    return `\`\`\`${text}\`\`\``
+  }
   toString () {
     return `\n` +
     `Arguments: [${this.args.size}] ${JSON.stringify(Array.from(this.args.entries()).map(a => { return { key: a[0], value: a[1] } }))}\n` +

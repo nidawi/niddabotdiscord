@@ -20,13 +20,14 @@ router.use('', async (route, msg, next) => {
 
     const options = {
       amount: route.hasArgument('amount') ? helpers.validateNumber(route.getArgument('amount'), 'amount', 2, null) : 100,
-      byUser: route.hasArgument('user') ? msg.niddabot.guild.members.get(route.getArgument('user')) : undefined
+      byUser: route.hasArgument('user') ? msg.niddabot.guild.members.get(route.getArgument('user')) : undefined,
+      filter: route.getArgument('filter')
     }
     if (route.hasArgument('user') && !options.byUser) throw new Error(`no user with the id ${route.getArgument('user')} was found.`)
 
     const messages = await msg.niddabot.channel.getMessages({ limit: options.amount })
     if (options.amount > 1) {
-      const deleted = await msg.niddabot.channel.deleteMessages(options.byUser ? messages.filter(a => a.author.id === options.byUser.user.id) : messages)
+      const deleted = await msg.niddabot.channel.deleteMessages(options.byUser ? messages.filter(a => a.author.id === options.byUser.user.id) : messages, options.filter)
       if (deleted && !route.hasArgument('silent')) msg.reply(`${deleted} messages ${options.byUser ? `by ${options.byUser.user.username} ` : ''}have been deleted.`)
     }
   } catch (err) {

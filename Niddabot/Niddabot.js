@@ -17,17 +17,20 @@ class Niddabot {
 
     const niddabotModules = [
       // Modules used by Niddabot.
-      { path: '*', module: require('./middleware/niddabot-session') },
+      { path: '*', module: require('./middleware/niddabot-session') }, // SYS Session module
 
       { path: 'sudo', module: require('./modules/utility/sudo') }, // Super User module
       { path: 'test', module: require('./modules/testing') }, // Test module
 
-      //  Utility
+      //  Utility / Management
       { path: 'me', module: require('./modules/utility/me') },
       { path: 'user', module: require('./modules/utility/user') },
       { path: 'server', module: require('./modules/utility/server') },
       { path: 'guild', module: require('./modules/utility/guild') },
       { path: 'channel', module: require('./modules/utility/channel') },
+
+      // Utility
+      { path: 'math', module: require('./modules/utility/math') },
 
       // Entertainment
       { path: '*', module: require('./modules/chatting'), options: { trigger: 'neither', type: 'private' } },
@@ -75,14 +78,18 @@ class Niddabot {
       discordClient.on('messageReactionRemove', () => {})
       discordClient.on('guildMemberAdd', async member => {})
       discordClient.on('channelCreate', channel => { })
+      discordClient.on('channelUpdate', (oldChannel, newChannel) => {
+        // When a channel is updated. We use this event to update our stored channel with new data.
+        console.log(`A channel with the id ${newChannel.id} has been updated!`)
+      })
       discordClient.on('message', async msg => {
         try {
           console.time(`"${msg.content}" msg`)
           // This is the main message handling, provided to us by Discord.js.
           // Each time this event occurs, a message is coming in.
-          // Ignore messages that are by ourselves. We don't need to waste processing power on those.
+          // Ignore messages that are made by bots (such as ourselves).
           // Also ignore messages that aren't either Private messages or Guild/server messages. [we do not currently support group messages etc.]
-          if (msg.author.id === discordClient.user.id || ['dm', 'text'].indexOf(msg.channel.type) === -1) return
+          if (msg.author.bot || ['dm', 'text'].indexOf(msg.channel.type) === -1) return
 
           // Do pre-processing that doesn't belong in the middleware chain.
           console.time(`"${msg.content}" preprocess`)

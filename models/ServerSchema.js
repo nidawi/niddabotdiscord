@@ -9,23 +9,15 @@ const serverSchema = new mongoose.Schema({
   guildSettings: { // Guild settings.
     enabled: { type: Boolean, default: true }, // Whether Niddabot is active in this guild.
     automaticRegistration: { type: Boolean, default: true }, // Whether Niddabot should automatically register new users when she detects them.
-    commandsEnabled: { type: Boolean, default: true }, // Whether Niddabot is accepting commands.
-    textResponseLevel: { type: String, enum: { values: ['full', 'limited', 'none'], message: 'Invalid response level.' }, default: 'full' },
-    voiceResponseLevel: { type: String, enum: { values: ['full', 'limited', 'none'], message: 'Invalid response level.' }, default: 'full' },
-    respondChannel: { type: String, default: '*' }, // The channel ID that Niddabot should respond in.
-    listenChannel: { type: String, default: '*' } // The channel ID that Niddabot should listen to.
+    commandsEnabled: { type: Boolean, default: true }, // Whether Niddabot is accepting commands. Global setting.
+    notificationsEnabled: { type: Boolean, default: true }, // Whether Niddabot is accepting notifications. Global setting.
+    moderationEnabled: { type: Boolean, default: false }, // Whether Niddabot is moderating this guild. Global setting.
+    textResponseLevel: { type: String, enum: { values: ['full', 'limited', 'none'], message: 'Invalid response level.' }, default: 'full' }, // Currently unused response level setting.
+    voiceResponseLevel: { type: String, enum: { values: ['full', 'limited', 'none'], message: 'Invalid response level.' }, default: 'full' } // Currently unused response level setting.
   },
-  niddabotNotifications: {
-    enabled: { type: Boolean, default: true },
-    interval: { type: Number, default: (1000 * 60 * 10) },
-    notifications: [{
-      name: String,
-      text: String,
-      channel: { type: String, default: '*' }
-    }]
-  },
-  niddabotCommands: [ { type: String } ], // List of references to Niddabot Command _ids.
-  niddabotAccounts: [{ type: String }], // The Niddabot Accounts that have edit permissions for this server.
+  niddabotPlugins: [ { plugin: String, enabled: Boolean } ],
+  niddabotCommands: [ { type: String } ], // List of references to Niddabot Command _ids. Global Guild commands.
+  niddabotAccounts: [ { type: String } ], // The Niddabot Accounts that have edit permissions for this server.
   niddabotRanks: [ { // Niddabot Server-specific User Ranks. Niddabot will always prioritize the highest rank.
     userId: String, // User Id
     rankId: String // Rank Id

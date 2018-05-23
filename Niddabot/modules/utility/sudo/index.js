@@ -51,5 +51,6 @@ configRouter.use('set', (route, msg, next) => {
 })
 
 router.use('config', configRouter)
+router.use('user', require('./user'))
 
 module.exports = router

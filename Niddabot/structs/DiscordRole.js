@@ -1,3 +1,7 @@
+/* eslint-disable no-unused-vars */
+const DiscordGuild = require('./DiscordGuild')
+/* eslint-enable */
+
 class DiscordRole {
   /**
    * Creates an instance of DiscordRole.
@@ -13,6 +17,21 @@ class DiscordRole {
     this.id = role.id
     this.managed = role.managed
     this.permissions = role.permissions
+
+    /**
+     * @type {DiscordGuild}
+     */
+    this.guild = undefined
+  }
+
+  _roleStatusList () {
+    return [ `${this.hoist ? 'H' : ''}`, `${this.mentionable ? 'M' : ''}`, `${this.managed ? 'MA' : ''}`, `P-${this.position}` ]
+      .filter(Boolean)
+      .join(' ')
+  }
+  toString (debug = false) {
+    return !debug ? `"${this.name}" (${this.id}) [${this.permissions}] ${this._roleStatusList()}`
+      : `"${this.name}" (${this.id}) [${this.permissions}] [${this.guild.name}] ${this._roleStatusList()}`
   }
 }
 

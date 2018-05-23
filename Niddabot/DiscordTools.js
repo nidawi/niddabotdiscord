@@ -4,6 +4,8 @@ const Collection = require('./components/Collection')
 const DiscordGuild = require('./structs/DiscordGuild')
 const DiscordChannel = require('./structs/DiscordChannel')
 const DiscordEmoji = require('./structs/DiscordEmoji')
+const DiscordWebhook = require('./structs/DiscordWebhook')
+const DiscordRole = require('./structs/DiscordRole')
 const DiscordUser = require('./structs/DiscordUser')
 // const DiscordMessage = require('./structs/DiscordMessage')
 const DiscordMember = require('./structs/DiscordMember')
@@ -389,6 +391,18 @@ const requestEmoji = async (guildId, emojiId = undefined) => {
   } else return undefined
 }
 
+const requestWebhooks = async channelId => {
+  if (!channelId) return undefined
+  const response = await discordRequest(`channels/${channelId}/webhooks`)
+  if (response && response.success) {
+    /**
+     * @type {DiscordWebhook[]}
+     */
+    const webhooks = response.data.map(a => new DiscordWebhook(a))
+    return webhooks
+  }
+}
+
 /**
  * Fetches an object representing a Discord Guild.
  * @async
@@ -396,18 +410,25 @@ const requestEmoji = async (guildId, emojiId = undefined) => {
  * @returns {DiscordGuild}
  */
 const requestGuild = async (guildId, jsonFriendly = false) => {
-  console.log('requestGuild, jsonFriendly:', jsonFriendly)
   if (!guildId) return undefined
   const response = await discordRequest(`guilds/${guildId}`)
   if (response && response.status === 200) {
     const guild = new DiscordGuild(response.data)
     guild.owner = await requestUser(undefined, response.data.owner_id)
-    guild.channels = new Collection((await requestChannels(guildId)).map(a => [a.id, Object.assign(a, { guild: !jsonFriendly ? guild : undefined })]))
-    guild.emojis = new Collection(response.data.emojis.map(a => { return [a.id, new DiscordEmoji(Object.assign(a, { guild: !jsonFriendly ? guild : undefined }))] }))
+    guild.roles = new Collection(guild.roles.map(a => [a.id, Object.assign(new DiscordRole(a), {
+      guild: !jsonFriendly ? guild : undefined
+    })]))
+    guild.channels = new Collection((await requestChannels(guildId, jsonFriendly)).map(a => [a.id, Object.assign(a, {
+      guild: !jsonFriendly ? guild : undefined,
+      webhooks: new Collection(a.webhooks.map(b => [b.id, Object.assign(b, { guild: !jsonFriendly ? guild : undefined })]))
+    })]))
+    guild.emojis = new Collection(response.data.emojis.map(a => [a.id, new DiscordEmoji(Object.assign(a, {
+      guild: !jsonFriendly ? guild : undefined
+    }))]))
     guild.members = new Collection((await requestMembers(guildId)).map(a => [a.user.id, Object.assign(a, {
       guild: !jsonFriendly ? guild : undefined,
       roles: new Collection(a.roles.map(b => [b, guild.roles.get(b)])),
-      user: Object.assign(a.user, { member: a })
+      user: Object.assign(a.user, { member: !jsonFriendly ? a : undefined })
     })]))
 
     return guild
@@ -420,13 +441,18 @@ const requestGuild = async (guildId, jsonFriendly = false) => {
  * @param {string} guildId Id of the Discord Guild.
  * @returns {DiscordChannel[]}
  */
-const requestChannels = async guildId => {
+const requestChannels = async (guildId, jsonFriendly = false) => {
   if (!guildId) return undefined
   const response = await discordRequest(`guilds/${guildId}/channels`)
   if (response && response.status === 200) {
-    return response.data
-      .filter(a => a.type !== 4) // Filter away categories, those aren't relevant.
-      .map(a => { return new DiscordChannel(a) })
+    const data = response.data.filter(a => a.type !== 4) // Filter away categories, those aren't relevant.
+    const channels = await Promise.all(data.map(async a => {
+      const channel = new DiscordChannel(a)
+      const hooks = await requestWebhooks(a.id)
+      channel.webhooks = hooks ? hooks.map(b => Object.assign(b, { channel: !jsonFriendly ? a : undefined })) : []
+      return channel
+    }))
+    return channels
   } else return undefined
 }
 

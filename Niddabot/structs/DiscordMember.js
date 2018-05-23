@@ -27,6 +27,15 @@ class DiscordMember {
      * @type {DiscordGuild}
      */
     this.guild = member.guild
+
+    /**
+     * @type {string}
+     */
+    this.username = undefined
+
+    Object.defineProperty(this, 'username', {
+      get: () => this.nick ? this.nick : this.user.username
+    })
   }
 
   /**
@@ -62,8 +71,11 @@ class DiscordMember {
   }
 
   toString () {
-    return `\nGuild Member: ${this.user.username}.\n` +
+    return `\n` +
+    `Guild Member: ${this.username}.\n` +
+    `Identifier: ${this.user.fullName}\n` +
     `Member of Guild "${this.guild.name}".\n` +
+    `Roles: ${this.roles.values().map(a => a.name).join(', ')}\n` +
     `Administrator: ${this.isAdministrator()}\n` +
     `Permissions: ${this.getTotalPermissions()}\n` +
     `Joined at: ${this.joinedAt.toLocaleDateString()}`

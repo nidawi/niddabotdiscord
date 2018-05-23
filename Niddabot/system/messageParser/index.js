@@ -16,14 +16,30 @@ Custom Emoji (Animated)	<a:NAME:ID>	<a:b1nzy:392938283556143104>
 */
 
 /**
+ * Converts a non-json-friendly string to a json-friendly one.
+ * @example jsonify("{ number: 25, string: 'hello' }") => { "number": 25, "string": "hello" }
+ * @param {string} text
+ * @returns {string}
+ */
+const jsonify = text => {
+  if (/^{.*}$/.test(text)) {
+    let t = text
+      .trim()
+      .replace(/'/g, '"')
+    const props = t.match(/\w+(?=:)/g)
+    props.forEach(a => { t = t.replace(a, `"${a}"`) })
+    return t
+  } else return text
+}
+
+/**
  * Attempts to parse JSON.
  * @param {string} text String to parse.
- * @returns {string}
  */
 const parseJSON = text => {
   try {
     // If it's a number and it's too large/small for Javascript's Number (most likely a discordId), it will simply remain a string.
-    const value = JSON.parse(text)
+    const value = JSON.parse(jsonify(text))
     if (typeof value === 'number' && (value > Number.MAX_SAFE_INTEGER || value < Number.MIN_SAFE_INTEGER)) return text
     else return value
   } catch (err) { return text }
@@ -56,11 +72,13 @@ const getType = text => {
   }
 }
 
+const formattingRegexp = /\*{1,2}(?=.+\*{1,2})|(?<=\*{1,2}.+)\*{1,2}|`{2,3}(?=.+`{2,3})|(?<=`{2,3}.+)`{2,3}|_{1,2}(?=.+_{1,2})|(?<=_{1,2}.+)_{1,2}|~{2}(?=.+~{2})|(?<=~{2}.+)~{2}/gi
+
 const fullSplit = text => {
   return [].concat(...text
     .split(/(?<!")\s(?=")|(?<=")\s(?!")|(?=-{2})/) // This works brilliantly. I have no idea why Standardjs is complaining so loudly.
     .map(a => a.trim())
-    .map(a => { if (a.indexOf('"') === -1) {return a.split(/\s/) } else return a }))
+    .map(a => { if (a.indexOf('"') === -1) { return a.replace(formattingRegexp, '').split(/\s/) } else return a }))
     .map(a => a.replace(/"/g, ''))
     .filter(Boolean)
 }
@@ -69,7 +87,8 @@ const partSplit = text => {
 }
 
 module.exports = msg => {
-  const parts = (msg.content.indexOf('"' > -1)) ? fullSplit(msg.content) : partSplit(msg.content)  //msg.content.trim().split(' ').filter(Boolean)
+  const content = msg.content.replace(formattingRegexp, '') // Remove Discord message formatting
+  const parts = (content.indexOf('"') > -1) ? fullSplit(msg.content) : partSplit(content)
   const cleanedParts = parts.filter(a => { return (!a.startsWith('--') && !a.startsWith('@') && !emojiRegex.test(a) && !mentionRegex.test(a) && !isURL(a)) })
   const args = Array.from(new Set(parts.filter(a => a.startsWith('--'))))
   const emojis = Array.from(new Set(parts.filter(a => emojiRegex.test(a)))).map(a => { const cleanedEmojis = a.replace(emojiCleanRegex, '').split(':'); return { name: `:${cleanedEmojis[0]}:`, id: cleanedEmojis[1], animated: /.*<a:.*/.test(a) } })
@@ -81,6 +100,7 @@ module.exports = msg => {
     // arguments: args.map(a => { const args = a.substring(2).split('='); return { key: args[0].toLowerCase(), value: parseJSON(args[1]) } }),
     hasArgument (arg) { return this.args.has(arg) },
     getArgument (arg) { return this.args.get(arg) },
+    rawParts: parts,
     message: cleanedParts.join(' '),
     parts: cleanedParts,
     emojis: emojis,
@@ -92,7 +112,10 @@ module.exports = msg => {
     isCommand: (parts[0].startsWith('!')),
     permissions: (msg.guild) ? msg.guild.me.highestRole.permissions : undefined,
     getText () {
-      return parts.filter(a => !a.startsWith('--')).join(' ')
+      return this.rawParts.filter(a => !a.startsWith('--')).join(' ')
+    },
+    insertBlock (text) {
+      return `\`\`\`${text}\`\`\``
     },
     toString () {
       return `\n` +

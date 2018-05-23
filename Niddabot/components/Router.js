@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 const Discordjs = require('discord.js')
 const MessageContent = require('../system/messageParser/MessageContent')
 const NiddabotSelf = require('../structs/NiddabotSelf')
@@ -62,22 +63,37 @@ class Router {
     })
   }
   /**
-   * @param {*} data
-   * @param {*} modulePath
+   * @param {MessageContent} data
+   * @param {string} modulePath
    * @returns {routeData}
    */
   _createRouteData (data, modulePath) {
     // Create a customized instance of the messageContent object to use for internal routers.
     // This provides the routes with modified paths where their own route has been removed.
-    if (modulePath === '*') return data
+    if (modulePath === '*' || modulePath === '') return data // all paths * have to fix too
     const pathRegexp = new RegExp(`${(data.routed) ? '' : '!?'}${modulePath}\\s?`, 'i')
     return Object.assign({}, data, {
       currentRoute: data.parts[0],
-      parts: data.parts.filter(a => !pathRegexp.test(a)), // a !== modulePath),
+      rawParts: this._removeOne(data.rawParts, pathRegexp), // data.rawParts.filter(a => !pathRegexp.test(a)),
+      parts: this._removeOne(data.parts, pathRegexp), // data.parts.filter(a => !pathRegexp.test(a)), // a !== modulePath),
       message: data.message.replace(pathRegexp, ''),
       routed: true
     })
   }
+
+  /**
+   * @param {string[]} arr
+   * @param {RegExp} regexp
+   */
+  _removeOne (arr, regexp) {
+    const newArr = arr.slice()
+    if (regexp.test(newArr[0])) newArr.shift()
+    return newArr
+  }
+
+  // ^ parts filter away all occurances, so !music join music will remove second music
+  // if we fix it by instead of using filter we use slice and remove the first, then all code that uses parts will stop working
+  // fix this tomorrow -- DONE (needs more testing)
 
   _getModules (data) {
     const param = (data.parts.length > 0) ? ((!data.routed) ? data.parts[0].replace(/!?/, '') : data.parts[0]) : ''
@@ -130,6 +146,7 @@ class Router {
     } catch (err) {
       if (err.message.length > 0) data.reply(err.message)
       console.log(`Wait Done: ${data.content}. Error occured.`)
+      console.log(`Error: ${err.message}`)
     }
   }
   getModuleList (asString = true) {

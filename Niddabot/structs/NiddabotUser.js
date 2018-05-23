@@ -1,5 +1,7 @@
 // Niddabot User Class Wrapper
+/* eslint-disable no-unused-vars */
 const DiscordUser = require('./DiscordUser')
+/* eslint-enable no-unused-vars */
 
 class NiddabotUser {
 /**
@@ -71,7 +73,7 @@ class NiddabotUser {
       get: () => { return (this.discordId !== null && this.discordId !== undefined && this.discordUser !== null && this.discordUser !== undefined) }
     })
     Object.defineProperty(this, 'registered', {
-      get: () => { return (this.id) }
+      get: () => this.exists && this.id
     })
     Object.defineProperty(this, 'avatar', {
       get: () => { return (this.exists) ? `https://cdn.discordapp.com/avatars/${this.discordUser.discordId}/${this.discordUser.avatar}` : undefined }
@@ -88,6 +90,9 @@ class NiddabotUser {
     Object.defineProperty(this, 'fullName', {
       get: () => { return (this.exists) ? `${this.discordUser.fullName}` : undefined }
     })
+
+    this._userTools = require('../UserTools')
+    this._discordTools = require('../DiscordTools')
   }
 
   /**
@@ -100,7 +105,7 @@ class NiddabotUser {
    */
   async refreshToken () {
     if (!this.hasValidToken) throw new Error('you do not have an Access Token to refresh.')
-    const newToken = (await require('../UserTools').updateUserToken(this.id)).tokenData
+    const newToken = (await this._userTools.updateUserToken(this.id)).tokenData
     if (newToken) {
       this.tokenData = newToken
       return newToken
@@ -114,7 +119,7 @@ class NiddabotUser {
    */
   async revokeToken () {
     if (!this.hasValidToken) throw new Error('you do not have an Access Token to revoke.')
-    const revokedToken = await require('../UserTools').revokeUserToken(this.id)
+    const revokedToken = await this._userTools.revokeUserToken(this.id)
     if (revokedToken) {
       delete this.tokenData
       return true
@@ -122,34 +127,68 @@ class NiddabotUser {
   }
   async testToken () {
     if (!this.hasValidToken) throw new Error('you do not have an Access Token.')
-    const tokenValid = await require('../DiscordTools').testToken(this.tokenData.accessToken)
+    const tokenValid = await this._discordTools.testToken(this.tokenData.accessToken)
     return tokenValid
   }
+  /**
+   * Clears the user's token. Only use this if the token has expired or is otherwise faulty.
+   * @memberof NiddabotUser
+   */
+  async clearToken () {
+    const revokedToken = await this._userTools.revokeUserToken(this.id, true)
+    if (revokedToken) {
+      delete this.tokenData
+      return true
+    } else throw new Error('token clear unsuccessful.')
+  }
+
   outranks (targetPrivilege) {
     return this.getPrivilege() > targetPrivilege
   }
-  canPerform (requirement) {
-    return this.getPrivilege() >= requirement
-  }
+
+  /**
+   * 1000 - Super User, 999 - Admin, 600 - Server Owner, 500 - Moderator, 200 - Server Admin, 100 - Server OP, 0 - VIP/User
+   * @param {1000|999|600|500|200|100|0} requirement
+   * @returns {boolean} whether the user can perform an action that requires the given privilege.
+   * @memberof NiddabotUser
+   */
+  canPerform (requirement) { return this.getPrivilege() >= requirement }
+
+  /**
+   * Gets this user's privilege. Wrapper for manually checking the niddabot rank (which you shouldn't).
+   * @memberof NiddabotUser
+   */
   getPrivilege () {
     return (this.niddabotRank) ? this.niddabotRank.privilege : 0
   }
+  /**
+   * @memberof NiddabotUser
+   */
   getRank () {
     return (this.niddabotRank) ? this.niddabotRank.name : 'User'
   }
-  getToken () {
+  getTokenShortString () {
     const remainder = this.tokenDaysLeft
     if (!remainder) return `no access token on record.`
     else if (remainder <= 0) return `expired ${(remainder * -1)} day${((remainder * -1) === 1) ? '' : 's'} ago.`
     else return `expires in ${remainder} day${(remainder === 1) ? '' : 's'}.`
   }
-  toString (debug) {
+  getTokenString () {
+    const remainder = this.tokenDaysLeft
+    if (!remainder) return `The user has no Access Token on record.`
+    else if (remainder <= 0) return `The user's Access Token expired ${(remainder * -1)} day${((remainder * -1) === 1) ? '' : 's'} ago.`
+    else return `The user's Access Token expires in ${remainder} day${(remainder === 1) ? '' : 's'}.`
+  }
+  toString (debug = false) {
     if (!this.exists) return undefined
-    return (debug) ? `${JSON.stringify(this)}` : `Name: ${this.discordUser.username}\n` +
-    `Id: ${this.discordId}\n` +
-    `Registered: ${(this.registered) ? 'yes' : 'no'}\n` +
-    `Rank: ${this.getRank()}\n` +
-    ((this.registered) ? `Token: ${this.getToken()}` : '')
+    return !debug ? `${this.discordUser.fullName}\n` +
+      `${this.registered ? `This user registered on ${this.createdAt.toLocaleDateString()}.` : `This user has not been registered.`}\n` +
+      `This user has the rank ${this.getRank()}.\n` +
+      `${this.registered ? this.getTokenString() : `This user does not have a valid Access Token on record.`}`
+      : `${this.discordUser.fullName} (${this.discordUser.id}) [${this.id}]\n` +
+        `${this.registered ? `This user registered on ${this.createdAt.toLocaleDateString()}.` : `This user has not been registered.`}\n` +
+        `This user has the rank ${this.getRank()} [${this.getPrivilege()}].\n` +
+        `${this.registered ? this.getTokenString() : `This user does not have a valid Access Token on record.`}`
   }
 }
 
