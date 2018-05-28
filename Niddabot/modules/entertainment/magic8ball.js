@@ -1,4 +1,5 @@
 // Magic 8 Ball entertainment module.
+// V2
 
 const responses = [
   'It is certain',
@@ -30,5 +31,5 @@ const responses = [
  */
 module.exports = (route, msg, next) => {
   if (route.parts.length < 1 || route.message.indexOf('?') === -1) return next()
-  msg.reply(`${responses[Math.floor(Math.random() * responses.length)].toLowerCase()}.`)
+  msg.channel.send(route.insertBlock(`${responses[Math.floor(Math.random() * responses.length)]}.`))
 }

@@ -323,7 +323,7 @@ const convertUserObject = data => {
  * @type {Object}
  * @property {string} description
  * @property {string} name
- * @property {UserData} owner
+ * @property {DiscordUser} owner
  * @property {boolean} bot_public
  * @property {boolean} bot_require_code_grant
  * @property {string} id
@@ -334,14 +334,17 @@ const convertUserObject = data => {
  * @returns {AppData}
  */
 const convertApplicationObject = data => {
-  return data
+  return Object.assign(data, {
+    owner: new DiscordUser(data.owner)
+  })
 }
 
 /**
  * @typedef SelfData
  * @type {Object}
  * @property {AppData} applicationData
- * @property {UserData} accountData
+ * @property {DiscordUser} accountData
+ * @property {DiscordChannel[]} channels
  */
 
 /**
@@ -354,11 +357,13 @@ const requestSelf = async () => {
   try {
     const appData = await Promise.all([
       discordRequest('oauth2/applications/@me'),
-      discordRequest('users/@me')
+      discordRequest('users/@me'),
+      discordRequest('users/@me/channels')
     ])
     return {
       applicationData: convertApplicationObject(appData[0].data),
-      accountData: new DiscordUser(appData[1].data)
+      accountData: new DiscordUser(appData[1].data),
+      channels: appData[2].data
     }
   } catch (err) {
     console.log('Failed to perform "requestSelf". Error: ', err.messages)
@@ -428,7 +433,7 @@ const requestGuild = async (guildId, jsonFriendly = false) => {
     guild.members = new Collection((await requestMembers(guildId)).map(a => [a.user.id, Object.assign(a, {
       guild: !jsonFriendly ? guild : undefined,
       roles: new Collection(a.roles.map(b => [b, guild.roles.get(b)])),
-      user: Object.assign(a.user, { member: !jsonFriendly ? a : undefined })
+      user: Object.assign(new DiscordUser(a.user), { member: !jsonFriendly ? a : undefined })
     })]))
 
     return guild
@@ -449,11 +454,30 @@ const requestChannels = async (guildId, jsonFriendly = false) => {
     const channels = await Promise.all(data.map(async a => {
       const channel = new DiscordChannel(a)
       const hooks = await requestWebhooks(a.id)
-      channel.webhooks = hooks ? hooks.map(b => Object.assign(b, { channel: !jsonFriendly ? a : undefined })) : []
+      channel.webhooks = hooks ? hooks.map(b => Object.assign(b, { user: new DiscordUser(b.user), channel: !jsonFriendly ? a : undefined })) : []
       return channel
     }))
     return channels
   } else return undefined
+}
+
+const createDMChannel = async (userId) => {
+  const requestOptions = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'Niddabot',
+      'Authorization': createAuthorizationHeader()
+    },
+    body: JSON.stringify({
+      recipient_id: userId
+    })
+  }
+
+  const response = await discordRequest('users/@me/channels', requestOptions)
+  if (response && response.success) {
+    return new DiscordChannel(response.data)
+  }
 }
 
 /**
@@ -473,6 +497,11 @@ const requestMembers = async (guildId, options = undefined) => {
     return response.data
       .map(a => new DiscordMember(a))
   } else return undefined
+}
+
+const requestMember = async (guildId, userId) => {
+  const response = await discordRequest(`guilds/${guildId}/members/${userId}`)
+  if (response && response.success) return new DiscordMember(response.data)
 }
 
 /**
@@ -549,9 +578,13 @@ const deleteMessages = async (channelId, messages) => {
 }
 
 module.exports = {
+  structs: {
+    DiscordChannel: DiscordChannel
+  },
   _rateCache: _rateCache,
   getAuthenticationString: generateAuthenticationString,
   generatePersonalAuthString: generatePersonalAuthString,
+  createAuthorizationHeader: createAuthorizationHeader,
   generateStateToken: generateStateToken,
   discordRequest: discordRequest,
   requestSelf: requestSelf,
@@ -559,8 +592,10 @@ module.exports = {
   refreshToken: refreshToken,
   revokeToken: revokeToken,
   testToken: testToken,
+  createDMChannel: createDMChannel,
   requestUser: requestUser,
   requestMembers: requestMembers,
+  requestMember: requestMember,
   requestGuild: requestGuild,
   requestChannels: requestChannels,
   requestEmoji: requestEmoji,

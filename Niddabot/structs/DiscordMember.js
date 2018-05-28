@@ -12,7 +12,7 @@ class DiscordMember {
    */
   constructor (member) {
     this.nick = (member.nick) ? member.nick : undefined
-    this.user = new DiscordUser(member.user)
+    this.user = member.user
     this.mute = member.mute
     this.deaf = member.deaf
     this.joinedAt = (member.joined_at) ? new Date(member.joined_at) : undefined
@@ -55,7 +55,7 @@ class DiscordMember {
   getTotalPermissions () {
     if (this.isAdministrator()) return 8
     else if (this.roles.length === 1) return this.roles.values()[0].permissions
-    else return this.roles.values().reduce((a, b) => a.permissions | b.permissions)
+    else return this.roles.values().reduce((a, b) => a.permissions | b.permissions, 0)
   }
 
   /**
@@ -70,6 +70,9 @@ class DiscordMember {
     else return helpers.checkFlag(this.getTotalPermissions(), permission)
   }
 
+  toShortString () {
+    return `${this.username}#${this.user.discriminator} (${this.user.id}) [${this.isAdministrator() ? 'Admin' : 'User'}] since ${this.joinedAt.toLocaleDateString()}`
+  }
   toString () {
     return `\n` +
     `Guild Member: ${this.username}.\n` +

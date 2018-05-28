@@ -29,6 +29,10 @@ const jsonify = text => {
     const props = t.match(/\w+(?=:)/g)
     props.forEach(a => { t = t.replace(a, `"${a}"`) })
     return t
+  } else if (/^\[.*\]$/.test(text)) {
+    return text
+      .trim()
+      .replace(/'/g, '"')
   } else return text
 }
 
@@ -118,8 +122,9 @@ module.exports = msg => {
       return `\`\`\`${text}\`\`\``
     },
     toString () {
-      return `\n` +
-      `Arguments: [${this.args.size}] ${JSON.stringify(Array.from(this.args.entries()).map(a => { return { key: a[0], value: a[1] } }))}\n` +
+      return `` +
+      `Arguments:[${this.args.size}]\n${Array.from(this.args.entries()).map(a => `${a[0]}: ${JSON.stringify(a[1])} (${Array.isArray(a[1]) ? 'array' : typeof a[1]})`).join('\n')}\n` +
+      `---------------------------------------------------\n` +
       `Message: ${this.message}\n` +
       `Parts (clean): ${JSON.stringify(this.parts)}\n` +
       `Parts: ${JSON.stringify(parts)}\n` +

@@ -31,7 +31,7 @@ class DiscordRole {
   }
   toString (debug = false) {
     return !debug ? `"${this.name}" (${this.id}) [${this.permissions}] ${this._roleStatusList()}`
-      : `"${this.name}" (${this.id}) [${this.permissions}] [${this.guild.name}] ${this._roleStatusList()}`
+      : `"${this.name}" (${this.id}) [${this.permissions}] [${this.guild.name}] {CL: ${this.color}} ${this._roleStatusList()}`
   }
 }
 

@@ -1,6 +1,8 @@
 // Tools for Niddabot User Accounts.
 const User = require('../models/Schemas').user
+const Collection = require('./components/Collection')
 const NiddabotUser = require('./structs/NiddabotUser')
+const NiddabotReminder = require('./structs/NiddabotReminder')
 const discord = require('./DiscordTools')
 const ranks = require('./RankTools')
 const sanitize = require('mongo-sanitize')
@@ -8,7 +10,7 @@ const sanitize = require('mongo-sanitize')
 /**
   * @returns {UserData}
   */
-const addUser = async (discordId, niddabotAccountId = undefined, niddabotRank = undefined, tokenData = undefined, transform = true) => {
+const addUser = async (discordId, niddabotAccountId = undefined, niddabotRank = undefined, tokenData = undefined, transform = true, addRefs = false) => {
   if (!discordId && !tokenData) throw new Error('Data missing. You must either provide an access token (tokenData) or a Discord User Id (discordId).')
   // Request user information using access token or discord user id
   const userInfo = (tokenData) ? await discord.requestUser(tokenData.accessToken, undefined) : await discord.requestUser(undefined, discordId)
@@ -17,14 +19,31 @@ const addUser = async (discordId, niddabotAccountId = undefined, niddabotRank = 
   if (typeof niddabotAccountId === 'string') user.niddabotAccount = niddabotAccountId // Add a link to a Niddabot Account, if any.
 
   const availableRanks = (await ranks.getRanks()).map(a => a.name) // Verify that the provided rank exists.
-  user.niddabotRank.rankId = (await ranks.getRank(availableRanks.includes(niddabotRank) ? niddabotRank : 'User')).id // Add a link to the specified Niddabot rank, if none, normal user.
+  const rank = await ranks.getRank(availableRanks.includes(niddabotRank) ? niddabotRank : 'User')
+  user.niddabotRank.rankId = rank.id // Add a link to the specified Niddabot rank, if none, normal user.
 
   if (tokenData) user.tokenData = tokenData
   user.discordId = userInfo.id || userInfo.discordId
 
   await user.save()
-  return (transform) ? transformUser(user) : user
+  return (transform) ? Object.assign(transformUser(user), {
+    niddabotRank: addRefs ? rank : rank.id
+  }) : user
 }
+const removeUser = async userId => {
+  try {
+    const user = await getUser(userId)
+    const accs = require('./AccountTools')
+    const account = await accs.fetchAccountById(user.niddabotAccount, false)
+    if (account) {
+      account.discordUser = undefined
+      await account.save()
+    }
+    await User.findByIdAndRemove(userId)
+    return true
+  } catch (e) { console.log('remove user error:', e.message); return undefined }
+}
+
 /**
  * Updates the Access Token associated with the provided Niddabot User / Discord User Id.
  * @param {string} id Niddabot User / Discord User Id.
@@ -71,14 +90,14 @@ const revokeUserToken = async (id, onlyRemove = false) => {
  */
 const findUser = async (discordId, transform = true) => {
   if (!discordId) return undefined
-  const user = await User.findOne({ discordId: discordId })
+  const user = await User.findOne({ discordId: sanitize(discordId) })
   if (!user) return undefined
   return (transform) ? transformUser(user) : user
 }
 const findUserByRank = async (rankName, transform = true) => {
   if (!rankName) return undefined
   const rank = await ranks.getRank(rankName)
-  const user = await User.findOne({ niddabotRank: { rankId: rank.id } })
+  const user = await User.findOne({ niddabotRank: { rankId: sanitize(rank.id) } })
   if (!user) return undefined
   return (transform) ? transformUser(user) : user
 }
@@ -109,6 +128,13 @@ const getNiddabotUser = async (id, discordId) => {
   createdUser.discordUser = (createdUser.hasValidToken) ? (await discord.requestUser(createdUser.tokenData.accessToken, undefined) || await discord.requestUser(undefined, user.discordId)) : await discord.requestUser(undefined, user.discordId)
   // Transform and Load Niddabot Rank
   createdUser.niddabotRank = (user.niddabotRank) ? await ranks.getRankById(user.niddabotRank.rankId) : undefined
+  // Load reminders, if any
+  createdUser.reminders = new Collection((await NiddabotReminder.find(user.discordId)).map(a => [a.id, Object.assign(a, { _user: createdUser })]))
+
+  if (createdUser.niddabotAccount) {
+    const accounts = require('./AccountTools')
+    createdUser.niddabotAccount = await accounts.fetchAccountById(createdUser.niddabotAccount)
+  }
 
   return createdUser
 }
@@ -227,6 +253,7 @@ module.exports = {
   verifyDatabase: verifyDatabase,
   createUser: createUser,
   addUser: addUser,
+  removeUser: removeUser,
   updateUserToken: updateUserToken,
   revokeUserToken: revokeUserToken,
   getUser: getUser,

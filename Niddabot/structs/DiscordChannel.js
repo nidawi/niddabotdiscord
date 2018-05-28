@@ -3,6 +3,7 @@ const DiscordGuild = require('./DiscordGuild')
 const DiscordMember = require('./DiscordMember')
 const DiscordMessage = require('./DiscordMessage')
 const DiscordWebhook = require('./DiscordWebhook')
+const DiscordUser = require('./DiscordUser')
 /* eslint-enable no-unused-vars */
 
 /**
@@ -33,12 +34,15 @@ class DiscordChannel {
     this.parentId = channel.parent_id // This always refers to a section, we don't care about those. Maybe later, but not currently.
     this.nsfw = channel.nsfw
     this.position = channel.position
+    /**
+     * The type of channel.
+     * @type {"text"|"private"|"voice"|"group"|"category"}
+     */
     this.type = convertChannelType(channel.type)
     this.id = channel.id
     this.bitrate = channel.bitrate
     this.userLimit = channel.user_limit
     this.permissionOverwrites = channel.permission_overwrites
-    this.recipients = channel.recipients
 
     this._tools = require('../DiscordTools') // This is a temporary band-aid to work around the Node circular Require restriction. Hopefully this will be solved in future refactors.
 
@@ -57,7 +61,17 @@ class DiscordChannel {
      * @type {DiscordGuild}
      */
     this.guild = channel.guild
+
+    /**
+     * @type {DiscordUser}
+     */
+    this.recipients = channel.recipients
   }
+
+  /**
+  * @type {DiscordUser}
+  */
+  get DMUser () { return this.recipients[0] }
 
   _update () {}
 
@@ -72,6 +86,14 @@ class DiscordChannel {
     if (typeof messages === 'number' || messages === 'all') messages = await this.getMessages(messages)
     if (!messages || messages.length < 1) throw new Error('no messages to be deleted were provided.')
     const rate = this._tools._rateCache.get('DELETE', 'channels/messages')
+
+    if (this.type === 'private') {
+      // DM Channels cannot use bulk-delete, so we have to manually delete.
+      const deletedDMs = (await Promise.all(messages.map(a => a.delete()))).filter(Boolean).map(a => a.success).filter(a => (a)).length
+      if (deletedDMs === 0) throw new Error('an error occured, and the deletion of messages failed. I apologise for the inconvenience.')
+      else return deletedDMs
+    }
+
     const newMessages = messages.filter(a => a.age < 14) // Filter old messages
     const oldMessages = messages.filter(a => a.age >= 14).slice(0, rate ? rate.total : 30) // Discord rate-limits us to 30 messages, at the moment. Therefore we cannot do any more than that. The rate limit is 2 min after 30 deletes. Yikes.
 
@@ -124,7 +146,7 @@ class DiscordChannel {
       if (data) {
         return data.map(a => Object.assign(a, {
           channel: this, // Add a reference to this channel.
-          member: this.guild.members.get(a.author.id) // Add a reference to the Member that sent this.
+          member: this.type !== 'private' ? this.guild.members.get(a.author.id) : undefined // Add a reference to the Member that sent this.
         }))
       }
     }
@@ -162,6 +184,34 @@ class DiscordChannel {
   }
 
   /**
+   * Sends content to the channel. Returns true if successful.
+   * @async
+   * @param {string|{ embed: *}} content
+   * @param {*} file
+   * @memberof DiscordChannel
+   */
+  async send (content, file = undefined) {
+    const requestOptions = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Niddabot',
+        'Authorization': this._tools.createAuthorizationHeader()
+      }
+    }
+    switch (typeof content) {
+      case 'string': // a normal text message
+        requestOptions.body = JSON.stringify({
+          content: content
+        })
+        break
+    }
+    const response = await this._tools.discordRequest(`channels/${this.id}/messages`, requestOptions)
+    if (response && response.success) return true
+    else return false
+  }
+
+  /**
    * Returns a boolean value representing whether or not the provided member has sufficient permissions to perform the provided action in this channel.
    * This defaults to Niddabot.
    * @param {number|"CREATE_INSTANT_INVITE"|"KICK_MEMBERS"|"BAN_MEMBERS"|"ADMINISTRATOR"|"MANAGE_CHANNELS"|"MANAGE_GUILD"|"ADD_REACTIONS"|"VIEW_AUDIT_LOG"|"VIEW_CHANNEL"|"SEND_MESSAGES"|"SEND_TTS_MESSAGES"|"MANAGE_MESSAGES"|"EMBED_LINKS"|"ATTACH_FILES"|"READ_MESSAGE_HISTORY"|"MENTION_EVERYONE"|"USE_EXTERNAL_EMOJIS"|"CONNECT"|"SPEAK"|"MUTE_MEMBERS"|"DEAFEN_MEMBERS"|"MOVE_MEMBERS"|"USE_VAD"|"CHANGE_NICKNAME"|"MANAGE_NICKNAMES"|"MANAGE_ROLES"|"MANAGE_WEBHOOKS"|"MANAGE_EMOJIS"} permission
@@ -181,15 +231,22 @@ class DiscordChannel {
    * @memberof DiscordChannel
    */
   toString () {
-    return `\n` +
-    `Channel Name: ${this.name}\n` +
-    `Type: ${this.type}\n` +
-    `Webhooks: ${this.webhooks.size}\n` +
-    `Belongs to guild: ${this.guild.name}\n` +
-    `Default: ${this.guild.default.id === this.id}`
+    switch (this.type) {
+      case 'private':
+        return `Private Channel (${this.id})\n` +
+        `User: ${this.DMUser.fullName}.`
+      case 'text': case 'voice':
+        return `` +
+        `${this.name} (${this.id}) [${this.type}]\n` +
+        `Position: ${this.position}\n` +
+        `Child: ${this.parentId ? 'yes' : 'no'}\n` +
+        `Webhooks: ${this.webhooks.size}\n` +
+        `Belongs to guild: ${this.guild.name}`
+      default: return 'no data available.'
+    }
   }
   toShortString () {
-    return `${this.name} (${this.id}) [${this.type}]`
+    return `#${this.position}. ${this.name} (${this.id}) [${this.type}]`
   }
 }
 

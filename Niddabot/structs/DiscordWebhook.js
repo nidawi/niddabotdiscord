@@ -20,7 +20,7 @@ class DiscordWebhook {
     /**
      * @type {DiscordUser}
      */
-    this.user = new DiscordUser(webhook.user)
+    this.user = webhook.user
     /**
      * @type {DiscordChannel}
      */

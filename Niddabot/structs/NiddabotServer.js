@@ -28,6 +28,12 @@ const DiscordGuild = require('./DiscordGuild')
  * @property {Date} updatedAt
  */
 
+const guildWelcomeMessages = [
+  'Welcome, <$memberName>!',
+  '@<@<$memberId>>, welcome to <$guildName>!',
+  '@<@<$memberId>>, I cannot speak for anyone else... but I am excited about your arrival.'
+]
+
 class NiddabotServer {
   /**
    * Creates an instance of NiddabotServer.
@@ -51,6 +57,10 @@ class NiddabotServer {
      */
     this.guild = undefined
   }
+  randomizeGreeting () {
+    return guildWelcomeMessages[Math.floor(Math.random() * guildWelcomeMessages.length)]
+  }
+
   toString (debug) {
     if (!this.guild) return `there is currently no guild registered to this server.`
     return `Name: ${this.guild.name}\n` +

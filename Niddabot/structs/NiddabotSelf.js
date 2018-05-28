@@ -1,8 +1,12 @@
+/* eslint-disable no-unused-vars */
 const NiddabotObject = require('./NiddabotObject')
 const Router = require('../components/Router')
 const DiscordGuild = require('./DiscordGuild')
+const DiscordUser = require('./DiscordUser')
+const DiscordChannel = require('./DiscordChannel')
 
 const statistics = require('../util/statistics')
+/* eslint-enable no-unused-vars */
 
 /**
  * @typedef UserDataEmail
@@ -42,6 +46,7 @@ class NiddabotSelf extends NiddabotObject {
    */
   constructor () {
     super()
+    this.colour = 3447003
     /**
      * @type {Date}
      */
@@ -59,7 +64,7 @@ class NiddabotSelf extends NiddabotObject {
      */
     this.application = undefined
     /**
-     * @type {UserData}
+     * @type {DiscordUser}
      */
     this.user = undefined
     /**
@@ -70,6 +75,10 @@ class NiddabotSelf extends NiddabotObject {
      * @type {function}
      */
     this.exit = undefined
+    /**
+     * @type {DiscordChannel[]}
+     */
+    this.channels = undefined
   }
   /**
    * Returns the emote string for the given name. If none, returns undefined.
@@ -82,6 +91,12 @@ class NiddabotSelf extends NiddabotObject {
     if (emote) return emote.toString()
     else return undefined
   }
+  getFooter () {
+    return {
+      icon_url: this.user.avatar,
+      text: `Niddabot © ${this.application.owner.fullName}`
+    }
+  }
   /**
    * Returns a string representation of this object.
    * @memberof NiddabotSelf
@@ -91,7 +106,7 @@ class NiddabotSelf extends NiddabotObject {
     return `My current status is as follows:\n` +
     `I have currently been online for ${super.secondsToMinutes((new Date() - this.startedAt) / 1000)}\n` +
     `I am currently ${(this.devMode) ? '' : 'not'} in Development Mode.\n` +
-    `My creator and developer is ${this.application.owner.username}#${this.application.owner.discriminator}.\n` +
+    `My creator and developer is ${this.application.owner.fullName}.\n` +
     `My currently registered Home Server is ${this.home.name}.\n` +
     `My current memory stats are:\n${statistics.getMemoryUsage()}\n` +
     `My System Info is:\n${statistics.getSystemInfo()}`

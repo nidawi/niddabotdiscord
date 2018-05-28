@@ -6,5 +6,6 @@ module.exports = {
   server: require('./ServerSchema'),
   rank: require('./RankSchema'),
   command: require('./CommandSchema'),
+  reminder: require('./ReminderSchema'),
   channel: require('./ChannelSchema')
 }

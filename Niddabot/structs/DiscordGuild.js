@@ -144,6 +144,8 @@ class DiscordGuild {
      */
     this.default = undefined
 
+    this._tools = require('../DiscordTools')
+
     Object.defineProperty(this, 'exists', {
       get: () => (this.name && this.owner)
     })
@@ -156,18 +158,38 @@ class DiscordGuild {
     Object.defineProperty(this, 'default', { get: () => this.channels.get(this.systemChannel) })
   }
 
+  async addMember (userId) {
+    if (!this.members.has(userId)) {
+      const member = await this._tools.requestMember(this.id, userId)
+      if (member) {
+        member.guild = this
+        member.roles = new Collection(member.roles.map(b => [b, this.roles.get(b)]))
+        member.user = Object.assign(member.user, { member: member })
+        // Add
+        this.members.set(userId, member)
+        // return
+        return member
+      }
+    }
+  }
+  removeMember (userId) {
+    if (this.members.has(userId)) {
+      this.members.delete(userId)
+      return true
+    }
+  }
+
   /**
    * Returns a string representation of this guild.
    * @memberof DiscordGuild
    * @returns {string}
    */
-  toString () {
-    return `--- Guild Info ---\n` +
-    `Name: ${this.name}\n` +
-    `Region: ${this.region}\n` +
-    `Owner: ${this.owner.fullName}\n` +
-    `Channels: ${this.channels.length}\n` +
-    `Members: ${this.members.length}`
+  toString (debug = false) {
+    return !debug ? `${this.name} (${this.id}) [${this.region}]\n` +
+      `This guild is owned by ${this.owner.fullName}.\n` +
+      `This guild has ${this.channels.length} channels, and ${this.default ? `the default one is ${this.default.name}` : `it has no default channel`}.\n` +
+      `This guild has ${this.members.length} members.`
+      : ``
   }
 }
 

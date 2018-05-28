@@ -1,6 +1,7 @@
 // Niddabot runtime Testing.
 const Router = require('../../components/Router')
-
+const Reminders = require('../../structs/NiddabotReminder')
+const helpers = require('../../util/helpers')
 const router = new Router()
 
 router.use('*', async (route, msg, next) => {
@@ -11,10 +12,6 @@ router.use('', (route, msg, next) => {
   msg.reply(`This is my testing module. Run a test by typing "test" followed by the test identifier. Add "--help" to the command to get additional test help. I currently support the following tests:\n` +
   `${router.getUsedPaths().join(', ')}`)
 })
-
-router.use('user', (route, msg, next) => {
-  next()
-})
 router.use('voice', (route, msg, next) => {
   const result = msg.guild.channels.find(g => g.name === route.parts[0] && g.type === 'voice')
   return msg.reply(`found ${result.name} with type ${result.type}.` || 'no channel found.')
@@ -24,6 +21,43 @@ router.use('eval', (route, msg, next) => {
   if (!msg.niddabot.user.canPerform(1000)) return next(new Error('access denied.'))
   const result = eval(route.message) // eslint-disable-line no-eval
   if (result) msg.reply(typeof result !== 'object' ? result : JSON.stringify(result))
+})
+
+router.use('date', (route, msg, next) => {
+  const dateInputs = [
+    '2019-01-31',
+    '31-25',
+    'tomorrow',
+    'in two days',
+    'in 2 days',
+    'Fri May 25 2018 18:00:00 GMT+0200',
+    'in 5 weeks',
+    'in 2 seconds',
+    'in 1 hour',
+    'on 2018-12-23',
+    'on 2015-01-23',
+    'at 7pm',
+    'at 22',
+    'at 10pm',
+    'at 18.30',
+    'at 4.25pm',
+    'at 12.27am',
+    'at 0.15',
+    'oaiwnoiaåwf 2018-12-23 awdpknawd'
+  ]
+
+  // No arg given, run all tests.
+  if (route.parts.length === 0) {
+    msg.channel.send(route.insertBlock(dateInputs.map(a => [a, helpers.parseDate(a)]).map(a => `${a[0]} => ${a[1] ? a[1].toLocaleString() : 'invalid date'}`).join('\n')))
+  } else {
+    const date = helpers.parseDate(route.getText())
+    msg.reply(date ? date.toLocaleString() : 'not a valid date.')
+  }
+})
+
+router.use('reminder', async (route, msg, next) => {
+  const results = await Reminders.find(route.getArgument('id') || route.parts[0])
+  console.log(typeof results[0])
 })
 
 router.use('obj', (route, msg, next) => {
@@ -38,6 +72,7 @@ router.use('block', (route, msg, next) => {
 router.use('cache', async (route, msg, next) => {
   const type = route.parts[0]
   const id = route.parts[1]
+  if (!type || !id) return next(new Error('missing data. Syntax: "user|server id".'))
   const item = await msg.niddabot._cache.get(type, id)
   return msg.reply(item.id ? `I found an item with Id ${item.id}.` : 'no match!')
 })

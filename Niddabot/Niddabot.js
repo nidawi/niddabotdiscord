@@ -27,10 +27,12 @@ class Niddabot {
       { path: 'user', module: require('./modules/utility/user') },
       { path: 'server', module: require('./modules/utility/server') },
       { path: 'guild', module: require('./modules/utility/guild') },
-      { path: 'channel', module: require('./modules/utility/channel') },
+      { path: 'channel', module: require('./modules/utility/channel'), options: { type: 'any' } },
 
       // Utility
       { path: 'math', module: require('./modules/utility/math') },
+      { path: 'reminder', module: require('./modules/utility/reminders') },
+      { path: 'time', module: require('./modules/utility/time') },
 
       // Entertainment
       { path: '*', module: require('./modules/chatting'), options: { trigger: 'neither', type: 'private' } },
@@ -56,6 +58,7 @@ class Niddabot {
         const self = await DiscordTools.requestSelf()
         niddabotSession.application = self.applicationData
         niddabotSession.user = self.accountData
+        niddabotSession.channels = self.channels
         await DiscordTools.wait(1000)
         niddabotSession.home = await DiscordTools.requestGuild(process.env.NIDDABOT_HOME_ID)
         niddabotSession.exit = this.disconnect
@@ -63,7 +66,8 @@ class Niddabot {
         console.log(`Required Niddabot Data has been loaded:\n` +
         `Application: ${niddabotSession.application.name} (${niddabotSession.application.id})\n` +
         `User: ${niddabotSession.user.username} (${niddabotSession.user.discordId})\n` +
-        `Home Server: ${niddabotSession.home.name} (${niddabotSession.home.id})`)
+        `Home Server: ${niddabotSession.home.name} (${niddabotSession.home.id})\n` +
+        `Active DMs: ${niddabotSession.channels.length}`)
       } catch (err) {
         // If this fails, exit bot.
         console.log('Failed to fetch information about self: ', err.message)
@@ -76,8 +80,42 @@ class Niddabot {
       discordClient.on('disconnect', () => console.log(`Niddabot disconnected at ${new Date().toLocaleString()}.`))
       discordClient.on('messageReactionAdd', (reaction, user) => { console.log(user.username, 'added', reaction.emoji.name) })
       discordClient.on('messageReactionRemove', () => {})
-      discordClient.on('guildMemberAdd', async member => {})
-      discordClient.on('channelCreate', channel => { })
+
+      // Event that fires when a new member joins a guild.
+      discordClient.on('guildMemberAdd', async member => {
+        // When a new member joins, we need to update the Guild object and send a customizable greeting.
+        if (member) {
+          const server = (await niddabotCache.get('server', member.guild.id))
+          const guild = server.guild
+          if (server && guild) {
+            const dMember = await guild.addMember(member.user.id)
+            if (dMember) {
+              console.log(dMember.user.fullName, 'has joined guild', guild.name)
+              const channel = member.guild.channels.get(guild.systemChannel)
+              if (channel) channel.send(`Welcome, ${member.user.username}, to ${guild.name}!`)
+            } else console.log('member already exists or something went wrong along the way!')
+          } else console.log('Somehow the guild', member.guild.name, member.guild.id, 'does not exist.')
+        }
+      })
+
+      // Event that fires when a member leaves a guild.
+      discordClient.on('guildMemberRemove', async member => {
+        if (member) {
+          const guild = (await niddabotCache.get('server', member.guild.id)).guild
+          if (guild.removeMember(member.user.id)) {
+            console.log(`Member ${member.user.username} (${member.user.id}) has left guild ${member.guild.name} (${member.guild.id}).`)
+            const channel = member.guild.channels.get(guild.systemChannel)
+            if (channel) channel.send(`${member.user.username} has left the guild.`)
+          }
+        }
+      })
+
+      discordClient.on('channelCreate', channel => {
+        // When a channel is created. Use this event to add the channel to the cache.
+      })
+      discordClient.on('channelDelete', async channel => {
+        // When a channel is deleted. Use this event to remove the channel from the cache.
+      })
       discordClient.on('channelUpdate', (oldChannel, newChannel) => {
         // When a channel is updated. We use this event to update our stored channel with new data.
         console.log(`A channel with the id ${newChannel.id} has been updated!`)
@@ -89,7 +127,7 @@ class Niddabot {
           // Each time this event occurs, a message is coming in.
           // Ignore messages that are made by bots (such as ourselves).
           // Also ignore messages that aren't either Private messages or Guild/server messages. [we do not currently support group messages etc.]
-          if (msg.author.bot || ['dm', 'text'].indexOf(msg.channel.type) === -1) return
+          if (msg.author.bot || ['dm', 'text'].indexOf(msg.channel.type) === -1 || msg.type !== 'DEFAULT') return
 
           // Do pre-processing that doesn't belong in the middleware chain.
           console.time(`"${msg.content}" preprocess`)
@@ -160,9 +198,9 @@ class Niddabot {
           // Things that are based on the module 'messageParser'
           // IMPLEMENT MODERATOR CHECK.
           // If the user requests an echo.
-          if (msg.messageContent.hasArgument('echo')) msg.reply(`ECHO => ${msg.messageContent.toString()}`)
+          if (msg.messageContent.hasArgument('echo')) msg.channel.send(`\`\`\`ECHO =>\n${msg.messageContent.toString()}\`\`\``)
           // Time has to be last.
-          if (msg.messageContent.hasArgument('time')) msg.reply(`TIME => total: ${(new Date() - msg.statistics.initiatedAt)} ms, pre-process: ${msg.statistics.preProcessDoneAt - msg.statistics.initiatedAt} ms, routing: ${(msg.statistics.postProcessStartAt - msg.statistics.preProcessDoneAt)} ms, post-process: ${new Date() - msg.statistics.postProcessStartAt} ms`)
+          if (msg.messageContent.hasArgument('time')) msg.channel.send(`TIME => total: ${(new Date() - msg.statistics.initiatedAt)} ms, pre-process: ${msg.statistics.preProcessDoneAt - msg.statistics.initiatedAt} ms, routing: ${(msg.statistics.postProcessStartAt - msg.statistics.preProcessDoneAt)} ms, post-process: ${new Date() - msg.statistics.postProcessStartAt} ms`)
         } catch (err) {
           console.log('Post-processing failed: ', err.message)
         }

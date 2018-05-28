@@ -11,9 +11,13 @@ router.use('', (route, msg, next) => {
   `${router.getUsedPaths().join(', ')}`)
 })
 router.use(/\d+/, async (route, msg, next) => {
-  const user = await users.getNiddabotUser(route.getArgument('id'), route.parts[0])
+  const user = await msg.niddabot._cache.get('user', route.getArgument('id') || route.currentRoute)
   if (user.exists) msg.channel.send(route.insertBlock(user.toString(true)))
   else msg.reply('I did not find anyone with that id.')
+})
+
+router.use('pm', async (route, msg, next) => {
+  
 })
 
 router.use('ranks', async (route, msg, next) => {
@@ -24,13 +28,25 @@ router.use('ranks', async (route, msg, next) => {
 
 router.use('register', async (route, msg, next) => {
   // Register a user on-the-fly.
-  const user = await users.getNiddabotUser(undefined, route.parts[0])
-  if (user.registered) return next(new Error('this user has already been registered!'))
-  else if (!user.exists) return next(new Error('this user does not exist!'))
-  else {
-    const newUser = users.addUser(user.id, undefined, route.getArgument('rank'), undefined)
-    if (!newUser) return next(new Error('I was unsuccessful in registering the user.'))
-    else msg.reply(`The user, ${user.discordUser.username}, has been registered.`)
+  const user = await msg.niddabot._cache.get('user', route.parts[0])
+  try {
+    if (await user.register(route.getArgument('rank'))) {
+      msg.reply(`${user.discordUser.fullName}, has been registered successfully.`)
+    } else return next(new Error('I was unsuccessful in registering the user.'))
+  } catch (err) {
+    return next(err)
   }
 })
+router.use('deregister', async (route, msg, next) => {
+  // Deregister on-the-fly.
+  const user = await msg.niddabot._cache.get('user', route.parts[0])
+  try {
+    if (await user.deregister(route.hasArgument('force'))) {
+      msg.reply(`${user.discordUser.fullName} has been deregistered successfully.`)
+    } else return next(new Error('I was unsuccessful in deregistering the user. Sorry. :c'))
+  } catch (err) {
+    return next(err)
+  }
+})
+
 module.exports = router

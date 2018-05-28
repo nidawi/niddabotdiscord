@@ -8,7 +8,7 @@ router.use('*', (route, msg, next) => {
   else next()
 })
 
-router.use('', (route, msg, next) => msg.reply(msg.niddabot.channel.toString()))
+router.use('', (route, msg, next) => msg.channel.send(route.insertBlock(msg.niddabot.channel.toString())))
 
 router.use('stats', async (route, msg, next) => {
   const msgsStats = await msg.niddabot.channel.getSortedMessages()

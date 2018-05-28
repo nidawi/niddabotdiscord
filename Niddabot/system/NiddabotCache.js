@@ -1,4 +1,5 @@
 // TODO: Implement Niddabot Cache
+const tools = require('../DiscordTools')
 const users = require('../UserTools')
 const servers = require('../ServerTools')
 
@@ -16,6 +17,7 @@ class NiddabotCache {
   async _getServer (id) {
     const server = await servers.getNiddabotServer(undefined, id)
     if (server) {
+      console.log(`[Niddabot Cache] Saved a new server with Id ${id}.`)
       this._cache.set(`server:${id}`, server)
       return server
     }
@@ -24,6 +26,7 @@ class NiddabotCache {
     const user = await users.getNiddabotUser(undefined, id)
 
     if (user) {
+      console.log(`[Niddabot Cache] Saved a new user with Id ${id}.`)
       this._cache.set(`user:${id}`, user)
       return user
     }
@@ -31,7 +34,7 @@ class NiddabotCache {
 
   async get (type, id) {
     switch (type) {
-      case 'server':
+      case 'server': case 'guild':
         const svr = this._cache.get(`server:${id}`) || await this._getServer(id)
         return svr
       case 'user':
@@ -45,7 +48,7 @@ class NiddabotCache {
   async apply (msg) {
     const server = msg.guild ? (this._cache.get(`server:${msg.guild.id}`) || await this._getServer(msg.guild.id)) : undefined
     const user = this._cache.get(`user:${msg._delegate || msg.author.id}`) || await this._getUser(msg._delegate || msg.author.id)
-    const channel = server ? server.guild.channels.get(msg.channel.id) : undefined
+    const channel = server ? server.guild.channels.get(msg.channel.id) : (msg.messageContent.type === 'private') ? user.discordUser.dmChannel || await user.discordUser.createDMChannel(msg.channel.id) : undefined
 
     msg.niddabot = {
       server: server,

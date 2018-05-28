@@ -71,7 +71,7 @@ class Router {
     // Create a customized instance of the messageContent object to use for internal routers.
     // This provides the routes with modified paths where their own route has been removed.
     if (modulePath === '*' || modulePath === '') return data // all paths * have to fix too
-    const pathRegexp = new RegExp(`${(data.routed) ? '' : '!?'}${modulePath}\\s?`, 'i')
+    const pathRegexp = new RegExp(`${(data.routed) ? '' : '!?'}${getType(modulePath) === 'regexp' ? modulePath.toString().replace(/\/$|^\//g, '') : modulePath}\\s?`, 'i')
     return Object.assign({}, data, {
       currentRoute: data.parts[0],
       rawParts: this._removeOne(data.rawParts, pathRegexp), // data.rawParts.filter(a => !pathRegexp.test(a)),
@@ -88,6 +88,7 @@ class Router {
   _removeOne (arr, regexp) {
     const newArr = arr.slice()
     if (regexp.test(newArr[0])) newArr.shift()
+    else console.log(regexp, 'did not match', newArr[0])
     return newArr
   }
 
@@ -99,7 +100,7 @@ class Router {
     const param = (data.parts.length > 0) ? ((!data.routed) ? data.parts[0].replace(/!?/, '') : data.parts[0]) : ''
     // SHOULD LOOK FOR A ROUTE BASED ON THE CURRENT PART, NOT THE MESSAGE. THE "ROUTE" PATH SHOULD NOT TRIGGER FOR "ROUTER"!!!!
     // INSTEAD OF LOOKING FOR AN EMPTY MESSAGE, CHECK IF THE PARTS ARRAY IS EMPTY!!!
-    console.log(`Looking for modules for: ${param} (length: ${data.parts.length})`)
+    // console.log(`Looking for modules for: ${param} (length: ${data.parts.length})`)
     return this._modules.filter(a => {
       // "mentioned"|"command"|"either"|"any" [trigger]
       // "guild"|"private"|"any" [type]
@@ -125,7 +126,7 @@ class Router {
       let result = false
       if (['string', 'regexp'].indexOf(getType(a.path)) !== -1) result = isMatch(a.path)
       else if (Array.isArray(a.path)) result = a.path.some(b => isMatch(b))
-      console.log(`comparing param "${param}" to route "${a.path}", result: ${result}`)
+      // console.log(`comparing param "${param}" to route "${a.path}", result: ${result}`)
       return result
     })
   }
