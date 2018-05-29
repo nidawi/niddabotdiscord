@@ -18,7 +18,8 @@ class DiscordMessage {
     /**
      * @type {Collection}
      */
-    this.reactions = (message.reactions) ? new Collection(message.reactions.map(a => { return [a.id, new DiscordEmoji(Object.assign(a, { guildId: undefined }))] })) : []
+    this.reactions = message.reactions && Array.isArray(message.reactions) ? new Collection(message.reactions.map(a => { return [a.id, new DiscordEmoji(Object.assign(a, { guildId: undefined }))] }))
+      : message.reactions instanceof Map ? new Collection(Array.from(message.reactions.values()).map(a => { return [a.id, new DiscordEmoji(Object.assign(a, { guildId: undefined }))] })) : []
     /**
      * @type {Collection}
      */
@@ -75,7 +76,6 @@ class DiscordMessage {
   async edit () {
 
   }
-
 
   async send () {
 

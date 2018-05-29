@@ -11,13 +11,16 @@ router.use('', (route, msg, next) => {
   `${router.getUsedPaths().join(', ')}`)
 })
 router.use(/\d+/, async (route, msg, next) => {
-  const user = await msg.niddabot._cache.get('user', route.getArgument('id') || route.currentRoute)
+  const user = await msg.niddabot.cache.get('user', route.getArgument('id') || route.currentRoute)
   if (user.exists) msg.channel.send(route.insertBlock(user.toString(true)))
   else msg.reply('I did not find anyone with that id.')
 })
 
 router.use('pm', async (route, msg, next) => {
-  
+  const target = await msg.niddabot.cache.getUser(route.getArgument('user') || route.parts[0])
+  if (target) {
+    await target.discordUser.sendDM(route.getText(1))
+  } else msg.reply('you did either not provide a target user, or the provided target does not exist.')
 })
 
 router.use('ranks', async (route, msg, next) => {
@@ -28,7 +31,7 @@ router.use('ranks', async (route, msg, next) => {
 
 router.use('register', async (route, msg, next) => {
   // Register a user on-the-fly.
-  const user = await msg.niddabot._cache.get('user', route.parts[0])
+  const user = await msg.niddabot.cache.get('user', route.parts[0])
   try {
     if (await user.register(route.getArgument('rank'))) {
       msg.reply(`${user.discordUser.fullName}, has been registered successfully.`)
@@ -39,7 +42,7 @@ router.use('register', async (route, msg, next) => {
 })
 router.use('deregister', async (route, msg, next) => {
   // Deregister on-the-fly.
-  const user = await msg.niddabot._cache.get('user', route.parts[0])
+  const user = await msg.niddabot.cache.get('user', route.parts[0])
   try {
     if (await user.deregister(route.hasArgument('force'))) {
       msg.reply(`${user.discordUser.fullName} has been deregistered successfully.`)

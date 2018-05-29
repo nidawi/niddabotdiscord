@@ -115,8 +115,8 @@ module.exports = msg => {
     isMentioned: (mentions.indexOf(msg.self.user.discordId) > -1),
     isCommand: (parts[0].startsWith('!')),
     permissions: (msg.guild) ? msg.guild.me.highestRole.permissions : undefined,
-    getText () {
-      return this.rawParts.filter(a => !a.startsWith('--')).join(' ')
+    getText (start = 0) {
+      return this.rawParts.slice(start).filter(a => !a.startsWith('--')).join(' ')
     },
     insertBlock (text) {
       return `\`\`\`${text}\`\`\``

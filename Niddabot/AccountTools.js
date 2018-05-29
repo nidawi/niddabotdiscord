@@ -123,12 +123,13 @@ const getAccount = async (name, password) => {
  */
 const verifyDatabase = async (log = false) => {
   const accounts = await Account.find()
-  const adminAccount = await fetchAccount('nidawi', false) // Check if Admin account exists.
+  let adminAccount = await fetchAccount('nidawi', false) // Check if Admin account exists.
+  let examinerAccount = await fetchAccount('examiner', false)
   if (!adminAccount) {
     // Admin account does not exist. Create it.
     if (log) console.log('Admin Account missing. Creating...')
     try {
-      const newAccount = await createAccount({
+      adminAccount = await createAccount({
         name: 'nidawi',
         pass: process.env.NIDDABOT_DEV_PW,
         email: 'nidawi93@outlook.com',
@@ -138,16 +139,34 @@ const verifyDatabase = async (log = false) => {
         receiveEmails: true
       })
       if (log) console.log('Admin Account created.')
-      return newAccount
     } catch (err) {
       if (log) console.log('Admin Account failed to create: ' + err.message)
-      return undefined
     }
-  } else {
-    if (log) console.log(`Admin Account exists. Name: ${adminAccount.name}, Id: ${adminAccount._id}, Created: ${adminAccount.createdAt}`)
-    if (log) console.log(`Found a total of ${accounts.length} accounts.`)
-    return adminAccount
   }
+  if (!examinerAccount) {
+    if (log) console.log('Examiner Account missing. Creating...')
+    try {
+      examinerAccount = await createAccount({
+        name: 'examiner',
+        pass: '1dv430',
+        email: 'unknown_email@lnu.se',
+        nationality: 'Sweden',
+        type: 'user',
+        acceptedTerms: true,
+        receiveEmails: true
+      })
+      if (log) console.log('Examiner Account created.')
+    } catch (err) {
+      if (log) console.log('Examiner Account failed to create: ' + err.message)
+    }
+  }
+
+  if (log) {
+    console.log(`Admin Account exists. Name: ${adminAccount.name}, Id: ${adminAccount._id}, Created: ${adminAccount.createdAt}`)
+    console.log(`Examiner Account exists. Name: ${examinerAccount.name}, Id: ${examinerAccount.id}, Created: ${examinerAccount.createdAt}`)
+    console.log(`Found a total of ${accounts.length} accounts.`)
+  }
+  return adminAccount
 }
 
 /**

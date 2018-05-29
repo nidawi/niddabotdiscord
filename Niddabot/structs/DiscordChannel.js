@@ -4,22 +4,8 @@ const DiscordMember = require('./DiscordMember')
 const DiscordMessage = require('./DiscordMessage')
 const DiscordWebhook = require('./DiscordWebhook')
 const DiscordUser = require('./DiscordUser')
+const Collection = require('../components/Collection')
 /* eslint-enable no-unused-vars */
-
-/**
-  * Converts a numbered Type into a string representation.
-  * @param {number} type
-  */
-const convertChannelType = type => {
-  switch (type) {
-    case 0: return 'text'
-    case 1: return 'private'
-    case 2: return 'voice'
-    case 3: return 'group'
-    case 4: return 'category'
-    default: return 'unknown'
-  }
-}
 
 class DiscordChannel {
   /**
@@ -38,7 +24,7 @@ class DiscordChannel {
      * The type of channel.
      * @type {"text"|"private"|"voice"|"group"|"category"}
      */
-    this.type = convertChannelType(channel.type)
+    this.type = DiscordChannel.convertChannelType(channel.type)
     this.id = channel.id
     this.bitrate = channel.bitrate
     this.userLimit = channel.user_limit
@@ -73,7 +59,52 @@ class DiscordChannel {
   */
   get DMUser () { return this.recipients[0] }
 
+  /**
+   * Converts a type number to a type string and vice versa.
+   * @static
+   * @param {0|1|2|3|4|'text'|'private'|'voice'|'group'|'category'} type
+   * @memberof DiscordChannel
+   */
+  static convertChannelType (type) {
+    if (typeof type === 'string') {
+      switch (type) {
+        case 'text': return 0
+        case 'private': return 1
+        case 'voice': return 2
+        case 'group': return 3
+        case 'category': return 4
+        default: return 'unknown'
+      }
+    } else if (typeof type === 'number') {
+      switch (type) {
+        case 0: return 'text'
+        case 1: return 'private'
+        case 2: return 'voice'
+        case 3: return 'group'
+        case 4: return 'category'
+        default: return 'unknown'
+      }
+    }
+  }
+
   _update () {}
+
+  /**
+   * Registers a pre-loaded message into this channel. This is intended to be used in conjunction with DiscordJs.
+   * @param {MessageData} data The message data.
+   * @returns {DiscordMessage} the added message.
+   * @memberof DiscordChannel
+   */
+  _addMessage (data) {
+    const newMsg = new DiscordMessage(data)
+    newMsg.channel = this
+    if (this.guild) {
+      newMsg.member = this.guild.members.get(newMsg.author.id)
+      newMsg.author = newMsg.member.user
+    }
+    this.messages.set(newMsg.id, newMsg)
+    return newMsg
+  }
 
   /**
    * Deletes messages from the channel. Returns the amount of deleted messages.
@@ -174,7 +205,8 @@ class DiscordChannel {
    * @memberof DiscordChannel
    */
   async getMessage (id) {
-    const msg = this.messages.get(id) || await this._tools.requestMessage(this.id, id)
+    if (this.messages.has(id)) return this.messages.get(id)
+    const msg = await this._tools.requestMessage(this.id, id)
     if (msg) {
       this.messages.set(id, msg)
       msg.channel = this // Add a reference to this channel.
@@ -201,6 +233,7 @@ class DiscordChannel {
     }
     switch (typeof content) {
       case 'string': // a normal text message
+        if (content.length > 2000) throw new Error('content is too long to send! 2,000 is max.')
         requestOptions.body = JSON.stringify({
           content: content
         })
@@ -209,6 +242,22 @@ class DiscordChannel {
     const response = await this._tools.discordRequest(`channels/${this.id}/messages`, requestOptions)
     if (response && response.success) return true
     else return false
+  }
+
+  /**
+   * Fetches the webhooks that belong to this channel.
+   * @memberof DiscordChannel
+   */
+  async fetchWebhooks () {
+    const hooks = await this._tools.requestWebhooks(this.id)
+    if (hooks) {
+      this.webhooks = new Collection(hooks.map(a => Object.assign(a, {
+        user: new DiscordUser(a.user),
+        channel: this,
+        guild: this.guild
+      })))
+      return this.webhooks
+    }
   }
 
   /**
@@ -221,7 +270,7 @@ class DiscordChannel {
    */
   hasPermission (permission, member = this.guild.me) {
     // This is a bit more complicated than the usual permissions due to channel-level overrides and what not.
-    if (member.isAdministrator()) return true
+    if (member.isAdministrator) return true
     return false // Not implemented
   }
 
@@ -240,7 +289,6 @@ class DiscordChannel {
         `${this.name} (${this.id}) [${this.type}]\n` +
         `Position: ${this.position}\n` +
         `Child: ${this.parentId ? 'yes' : 'no'}\n` +
-        `Webhooks: ${this.webhooks.size}\n` +
         `Belongs to guild: ${this.guild.name}`
       default: return 'no data available.'
     }
@@ -271,6 +319,16 @@ module.exports = DiscordChannel
  */
 
 /**
+ * "around", "before", and "after" are all mutually exclusive.
+ * @typedef MessageRequestOptions
+ * @type {Object}
+ * @property {string} [around] Fetch messages AROUND this message Id.
+ * @property {string} [before] Fetch messages BEFORE this message Id.
+ * @property {string} [after] Fetch messages AFTER this message Id.
+ * @property {number} [limit=50] Messages to fetch. Max: 100. Default: 50.
+ */
+
+/**
  * @typedef UserData
  * @type {Object}
  * @property {string} username
@@ -281,11 +339,76 @@ module.exports = DiscordChannel
  */
 
 /**
- * "around", "before", and "after" are all mutually exclusive.
- * @typedef MessageRequestOptions
+ * @typedef EmojiData
  * @type {Object}
- * @property {string} [around] Fetch messages AROUND this message Id.
- * @property {string} [before] Fetch messages BEFORE this message Id.
- * @property {string} [after] Fetch messages AFTER this message Id.
- * @property {number} [limit=50] Messages to fetch. Max: 100. Default: 50.
+ * @property {boolean} managed
+ * @property {string} name
+ * @property {string[]} roles
+ * @property {UserData} [user]
+ * @property {boolean} require_colons
+ * @property {boolean} animated
+ * @property {string} id
+ * @property {string} [guildId]
+ */
+
+/**
+ * @typedef ReactionData
+ * @type {Object}
+ * @property {number} count
+ * @property {boolean} me
+ * @property {EmojiData} emoji
+ */
+
+/**
+ * @typedef AttachmentData
+ * @type {Object}
+ * @property {string} url
+ * @property {string} proxy_url
+ * @property {string} filename
+ * @property {number} width
+ * @property {number} height
+ * @property {string} id
+ * @property {number} size
+ */
+
+/**
+ * @typedef ThumbnailData
+ * @type {Object}
+ * @property {string} url
+ * @property {string} width
+ * @property {string} proxy_url
+ * @property {number} height
+ */
+
+/**
+ * @typedef EmbedData
+ * @type {Object}
+ * @property {string} description
+ * @property {string} title
+ * @property {string} url
+ * @property {number} color
+ * @property {string} type
+ * @property {ThumbnailData} thumbnail
+ */
+
+/**
+ * @typedef MessageData
+ * @type {Object}
+ * @property {EmojiData[]} reactions
+ * @property {AttachmentData[]} attachments
+ * @property {boolean} tts
+ * @property {EmbedData[]} embeds
+ * @property {Date} timestamp
+ * @property {boolean} mention_everyone
+ * @property {string} webhook_id
+ * @property {string} id
+ * @property {boolean} pinned
+ * @property {Date} edited_timestamp
+ * @property {UserData} author
+ * @property {string[]} mention_roles
+ * @property {string} content
+ * @property {string} channel_id
+ * @property {DiscordChannel} _channel
+ * @property {UserData[]} mentions
+ * @property {number} type
  */

@@ -2,6 +2,7 @@ const Discord = require('discord.js')
 const DiscordTools = require('./DiscordTools')
 const Router = require('./components/Router')
 const NiddabotSelf = require('./structs/NiddabotSelf')
+const NiddabotError = require('./structs/NiddabotError')
 
 const NiddabotCache = require('./system/NiddabotCache')
 const parseMessage = require('./system/messageParser')
@@ -55,17 +56,20 @@ class Niddabot {
         // Load Required Data into Session.
         // Make sure that we don't overload Discord with these requests, as they are quite many.
         // Wait for a second between the calls.
+        console.time('Niddabot boot sequence')
         const self = await DiscordTools.requestSelf()
-        niddabotSession.application = self.applicationData
+        niddabotSession.application = Object.assign(self.applicationData, { owner: (await niddabotCache.getUser(self.applicationData.owner.id)).discordUser })
         niddabotSession.user = self.accountData
         niddabotSession.channels = self.channels
+        niddabotSession.guilds = (await Promise.all(self.guilds.map(a => niddabotCache.getServer(a.id)))).map(a => a.guild) // Pre-load all of Niddabot's current guilds.
         await DiscordTools.wait(1000)
-        niddabotSession.home = await DiscordTools.requestGuild(process.env.NIDDABOT_HOME_ID)
+        niddabotSession.home = (await niddabotCache.getServer(process.env.NIDDABOT_HOME_ID)).guild
         niddabotSession.exit = this.disconnect
         niddabotSession.headRouter = niddabotRouter
         console.log(`Required Niddabot Data has been loaded:\n` +
         `Application: ${niddabotSession.application.name} (${niddabotSession.application.id})\n` +
-        `User: ${niddabotSession.user.username} (${niddabotSession.user.discordId})\n` +
+        `Owner: ${niddabotSession.application.owner.fullName} (${niddabotSession.application.owner.id})\n`,
+        `User: ${niddabotSession.user.username} (${niddabotSession.user.id})\n` +
         `Home Server: ${niddabotSession.home.name} (${niddabotSession.home.id})\n` +
         `Active DMs: ${niddabotSession.channels.length}`)
       } catch (err) {
@@ -85,7 +89,8 @@ class Niddabot {
       discordClient.on('guildMemberAdd', async member => {
         // When a new member joins, we need to update the Guild object and send a customizable greeting.
         if (member) {
-          const server = (await niddabotCache.get('server', member.guild.id))
+          const server = await niddabotCache.getServer(member.guild.id)
+          // const user = await niddabotCache.getUser(member.user.id)
           const guild = server.guild
           if (server && guild) {
             const dMember = await guild.addMember(member.user.id)
@@ -101,8 +106,8 @@ class Niddabot {
       // Event that fires when a member leaves a guild.
       discordClient.on('guildMemberRemove', async member => {
         if (member) {
-          const guild = (await niddabotCache.get('server', member.guild.id)).guild
-          if (guild.removeMember(member.user.id)) {
+          const guild = (await niddabotCache.getServer(member.guild.id)).guild
+          if (guild.members.delete(member.user.id)) {
             console.log(`Member ${member.user.username} (${member.user.id}) has left guild ${member.guild.name} (${member.guild.id}).`)
             const channel = member.guild.channels.get(guild.systemChannel)
             if (channel) channel.send(`${member.user.username} has left the guild.`)
@@ -110,15 +115,53 @@ class Niddabot {
         }
       })
 
-      discordClient.on('channelCreate', channel => {
-        // When a channel is created. Use this event to add the channel to the cache.
-      })
-      discordClient.on('channelDelete', async channel => {
-        // When a channel is deleted. Use this event to remove the channel from the cache.
-      })
-      discordClient.on('channelUpdate', (oldChannel, newChannel) => {
-        // When a channel is updated. We use this event to update our stored channel with new data.
-        console.log(`A channel with the id ${newChannel.id} has been updated!`)
+      discordClient.on('raw', async data => {
+        // We're using raw here so that we can dodge DiscordJs's annoying parsing.
+        // console.log(data)
+        const msg = data.d
+        if (!msg) return
+        const server = msg.guild_id ? await niddabotCache.getServer(msg.guild_id) : undefined
+
+        switch (data.t) {
+          case 'CHANNEL_CREATE': // When a channel is created. Use this event to add the channel to the cache.
+            switch (msg.type) {
+              case 0: case 2: // type 0 & 2 = guild channel
+                const newChannel = await DiscordTools.convertChannelObject(msg)
+                console.log(`${server.guild.name} (${server.guild.id}) has created a new channel (${newChannel.name}) with Id ${msg.id}.`)
+                server.guild.createChannel(newChannel)
+                break
+              case 1: // 1 = dm
+                const user = await niddabotCache.getUser(msg.recipients[0].id)
+                console.log(`${user.discordUser.fullName} (${user.discordUser.id}) has created a DM channel with Id ${msg.id}.`)
+                user.discordUser.createDMChannel(msg.id)
+                break
+            }
+            break
+          case 'CHANNEL_DELETE': // When a channel is deleted. Use this event to remove the channel from the cache.
+            console.log(`${server.guild.name} (${server.guild.id}) has deleted a channel with Id ${msg.id}.`)
+            server.guild.channels.delete(msg.id)
+            break
+          case 'CHANNEL_UPDATE': // When a channel is updated. We use this event to update our stored channel with new data.
+            console.log(`${server.guild.name} (${server.guild.id}) has updated a channel with Id ${msg.id}.`)
+            console.log(msg)
+            break
+          case 'GUILD_UPDATE': // When a guild is updated.
+            console.log(`${server.guild.name} (${server.guild.id}) has been updated.`)
+            console.log(msg)
+            break
+          case 'USER_UPDATE': // A user is updated.
+            console.log(`A user (${msg.user.id}) has been updated.`)
+            console.log(msg)
+            break
+          case 'GUILD_MEMBER_UPDATE': // A guild member is updated.
+            console.log(`A Guild Member of ${server.guild.name} (${server.guild.id}) has been updated.`)
+            console.log(msg)
+            break
+          case 'PRESENCE_UPDATE': // A user updates its presence (name, avatar, etc.)
+            console.log(`A user (${msg.user.id}) has updated its presence.`)
+            console.log(msg)
+            break
+        }
       })
       discordClient.on('message', async msg => {
         try {
@@ -155,11 +198,13 @@ class Niddabot {
 
           console.timeEnd(`"${msg.content}" msg`)
         } catch (err) {
-          console.log(err.message)
+          if (err instanceof NiddabotError) msg.reply(err.message)
+          else console.log(err.message)
         }
       })
 
       await discordClient.login(process.env.NIDDABOT_TOKEN)
+      console.timeEnd('Niddabot boot sequence')
     }
     this.disconnect = async (exit = true) => {
       await discordClient.destroy()
@@ -170,6 +215,9 @@ class Niddabot {
         // Pre-process means adding mostly statistical or mandatory transformations for the data to be properly processed by middleware.
         // Add information about Niddabot herself.
         msg.self = niddabotSession
+        msg.niddabot = {
+          cache: niddabotCache
+        }
 
         // Add statistics.
         msg.statistics = {
@@ -193,7 +241,7 @@ class Niddabot {
     const postProcess = async msg => {
       // Post-process means printing things that are usually defined by arguments or by logging events etc.
       msg.statistics.postProcessStartAt = new Date()
-      if (msg.messageContent) {
+      if (msg.messageContent && msg.niddabot.user.canPerform(999)) {
         try {
           // Things that are based on the module 'messageParser'
           // IMPLEMENT MODERATOR CHECK.

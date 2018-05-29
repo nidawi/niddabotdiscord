@@ -8,6 +8,7 @@ const NiddabotUser = require('../structs/NiddabotUser')
 const DiscordGuild = require('../structs/DiscordGuild')
 const DiscordChannel = require('../structs/DiscordChannel')
 const DiscordMember = require('../structs/DiscordMember')
+const DiscordMessage = require('../structs/DiscordMessage')
 
 /**
  * @typedef routeData
@@ -71,7 +72,7 @@ class Router {
     // Create a customized instance of the messageContent object to use for internal routers.
     // This provides the routes with modified paths where their own route has been removed.
     if (modulePath === '*' || modulePath === '') return data // all paths * have to fix too
-    const pathRegexp = new RegExp(`${(data.routed) ? '' : '!?'}${getType(modulePath) === 'regexp' ? modulePath.toString().replace(/\/$|^\//g, '') : modulePath}\\s?`, 'i')
+    const pathRegexp = new RegExp(`${(data.routed) ? '' : '!?'}${getType(modulePath) === 'regexp' ? modulePath.toString().replace(/\/$|^\//g, '') : Array.isArray(modulePath) ? `(${modulePath.join('|')})` : modulePath}\\s?`, 'i')
     return Object.assign({}, data, {
       currentRoute: data.parts[0],
       rawParts: this._removeOne(data.rawParts, pathRegexp), // data.rawParts.filter(a => !pathRegexp.test(a)),
@@ -132,7 +133,7 @@ class Router {
   }
   async _route (data, route = undefined, next = undefined, options = undefined) {
     try {
-      console.log(`Wait Start: ${(route) ? route.message : data.content}, is sub-route: ${(route)}`)
+      console.log(`Wait Start: ${(route) ? route.message : data.content}, is sub-route: ${route !== undefined}`)
 
       // Sub-routers inherit the parent's options.
       if (options) { for (let i = 0; i < this._modules.length; i++) this._modules[i].options = options }
@@ -223,6 +224,7 @@ module.exports = Router
  * @property {NiddabotData} niddabot
  * @property {NiddabotSelf} self
  * @property {{}} [session]
+ * @property {function(string)} reply
  */
 
 /**
@@ -250,7 +252,8 @@ module.exports = Router
  * @property {NiddabotServer} server This is the Niddabot Server object. It contains the Discord Guild object etc.
  * @property {NiddabotUser} user This is the Niddabot User object. It contains the Discord User object.
  * @property {DiscordGuild} [guild] Quick-access to Discord Guild (if server is present).
- * @property {DiscordMember} member
- * @property {DiscordChannel} channel
- * @property {NiddabotCache} _cache
+ * @property {DiscordMember} [member] Quick-access to Discord Guild Member (if server & guild are present).
+ * @property {DiscordChannel} [channel] The Channel the message is in.
+ * @property {DiscordMessage} [message] The message that was received.
+ * @property {NiddabotCache} cache
  */

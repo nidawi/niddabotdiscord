@@ -1,8 +1,11 @@
+/* eslint-disable no-unused-vars */
 const Collection = require('../components/Collection')
 const DiscordRole = require('./DiscordRole')
 const DiscordGuild = require('./DiscordGuild')
 const DiscordUser = require('./DiscordUser')
 const helpers = require('../util/permissions')
+const general = require('../util/helpers')
+/* eslint-enable no-unused-vars */
 
 class DiscordMember {
   /**
@@ -39,21 +42,32 @@ class DiscordMember {
   }
 
   /**
+   * Gets the age (stay on server) of this user, in days.
+   * @readonly
+   * @memberof DiscordMember
+   */
+  get age () {
+    return Math.abs(general.getTimeDifference(this.joinedAt, 'days'))
+  }
+
+  /**
    * Returns a boolean value representing whether this member either has a role with Administrator privileges or is the Server Owner.
+   * @readonly
    * @returns {boolean}
    * @memberof DiscordMember
    */
-  isAdministrator () {
+  get isAdministrator () {
     return this.user.id === this.guild.owner.id || this.roles.values().some(a => a.permissions === 8)
   }
 
   /**
    * Returns a bit representation of the total permissions for this member.
+   * @readonly
    * @returns {Number}
    * @memberof DiscordMember
    */
-  getTotalPermissions () {
-    if (this.isAdministrator()) return 8
+  get totalPermissions () {
+    if (this.isAdministrator) return 8
     else if (this.roles.length === 1) return this.roles.values()[0].permissions
     else return this.roles.values().reduce((a, b) => a.permissions | b.permissions, 0)
   }
@@ -66,12 +80,12 @@ class DiscordMember {
    * @memberof DiscordMember
    */
   hasPermission (permission) {
-    if (this.isAdministrator()) return true
-    else return helpers.checkFlag(this.getTotalPermissions(), permission)
+    if (this.isAdministrator) return true
+    else return helpers.checkFlag(this.totalPermissions, permission)
   }
 
   toShortString () {
-    return `${this.username}#${this.user.discriminator} (${this.user.id}) [${this.isAdministrator() ? 'Admin' : 'User'}] since ${this.joinedAt.toLocaleDateString()}`
+    return `${this.username}#${this.user.discriminator} (${this.user.id}) [${this.isAdministrator ? 'Admin' : 'User'}] since ${this.joinedAt.toLocaleDateString()} (${this.age} ${this.age === 1 ? 'day' : 'days'})`
   }
   toString () {
     return `\n` +
@@ -79,8 +93,8 @@ class DiscordMember {
     `Identifier: ${this.user.fullName}\n` +
     `Member of Guild "${this.guild.name}".\n` +
     `Roles: ${this.roles.values().map(a => a.name).join(', ')}\n` +
-    `Administrator: ${this.isAdministrator()}\n` +
-    `Permissions: ${this.getTotalPermissions()}\n` +
+    `Administrator: ${this.isAdministrator}\n` +
+    `Permissions: ${this.totalPermissions}\n` +
     `Joined at: ${this.joinedAt.toLocaleDateString()}`
   }
 }

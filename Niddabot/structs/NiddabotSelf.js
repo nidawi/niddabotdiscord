@@ -8,37 +8,6 @@ const DiscordChannel = require('./DiscordChannel')
 const statistics = require('../util/statistics')
 /* eslint-enable no-unused-vars */
 
-/**
- * @typedef UserDataEmail
- * @type {Object}
- * @property {boolean} verified
- * @property {string} address
- */
-
-/**
- * @typedef AppData
- * @type {Object}
- * @property {string} description
- * @property {string} name
- * @property {UserData} owner
- * @property {boolean} bot_public
- * @property {boolean} bot_require_code_grant
- * @property {string} id
- * @property {string} icon
- */
-
-/**
- * @typedef UserData
- * @type {Object}
- * @property {string} discordId
- * @property {string} username
- * @property {string} discriminator
- * @property {string} avatar
- * @property {boolean} bot
- * @property {boolean} mfa_enabled
- * @property {UserDataEmail} email
- */
-
 class NiddabotSelf extends NiddabotObject {
   /**
    * Creates an instance of NiddabotSelf.
@@ -54,7 +23,7 @@ class NiddabotSelf extends NiddabotObject {
     /**
      * @type {boolean}
      */
-    this.devMode = true
+    this.devMode = false
     /**
      * @type {DiscordGuild}
      */
@@ -79,6 +48,10 @@ class NiddabotSelf extends NiddabotObject {
      * @type {DiscordChannel[]}
      */
     this.channels = undefined
+    /**
+     * @type {DiscordGuild[]}
+     */
+    this.guilds = undefined
   }
   /**
    * Returns the emote string for the given name. If none, returns undefined.
@@ -114,3 +87,34 @@ class NiddabotSelf extends NiddabotObject {
 }
 
 module.exports = NiddabotSelf
+
+/**
+ * @typedef UserDataEmail
+ * @type {Object}
+ * @property {boolean} verified
+ * @property {string} address
+ */
+
+/**
+ * @typedef AppData
+ * @type {Object}
+ * @property {string} description
+ * @property {string} name
+ * @property {UserData} owner
+ * @property {boolean} bot_public
+ * @property {boolean} bot_require_code_grant
+ * @property {string} id
+ * @property {string} icon
+ */
+
+/**
+ * @typedef UserData
+ * @type {Object}
+ * @property {string} discordId
+ * @property {string} username
+ * @property {string} discriminator
+ * @property {string} avatar
+ * @property {boolean} bot
+ * @property {boolean} mfa_enabled
+ * @property {UserDataEmail} email
+ */

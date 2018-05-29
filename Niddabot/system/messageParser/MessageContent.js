@@ -97,7 +97,7 @@ class MessageContent {
     this.isCommand = (parts[0].startsWith('!'))
     this.permissions = (msg.guild) ? msg.guild.me.highestRole.permissions : undefined
 
-    this.getText = () => { return parts.filter(a => !a.startsWith('--')).join(' ') }
+    this.getText = (start = 0) => { return parts.slice(start).filter(a => !a.startsWith('--')).join(' ') }
   }
   hasArgument (arg) {
     return this.args.has(arg)

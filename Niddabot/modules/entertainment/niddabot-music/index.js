@@ -8,56 +8,53 @@ const Song = require('./Song')
 const router = new Router()
 const moduleData = {
   name: 'Niddabot Music',
-  version: 'v0.0.1',
-  supportedSources: ['https://www.youtube.com']
+  version: 'v1.0.0'
 }
-
-/**
- * @typedef playData
- * @type {Object}
- * @property {number} start Where to start (in seconds).
- * @property {number} volume The volume to play at.
- */
-
-/**
- * @typedef song
- * @type {Object}
- * @property {string} songUri URL of song to play.
- * @property {ytdl.videoInfo} [songInfo] ytdl info about the song.
- * @property {playData} songData Song modifiers.
- * @property {songRequester} songRequester Name and Id of the song requester.
- * @function toString
- */
-
-/**
- * @typedef songRequester
- * @type {Object}
- * @property {string} discordId
- * @property {string} discordUsername
- * @property {Date} createdAt
- */
 
 // Niddabot Music Routes
 router.use('', (route, msg, next) => {
-  if (route.hasArgument('version')) return msg.reply(`I am currently version ${moduleData.version}. Go easy on me, please.`)
-  else if (route.hasArgument('supported')) return msg.reply(`I currently support the following music source(s): ${moduleData.supportedSources.join(', ')}.`)
-  else return next()
-})
-router.use('help', (route, msg, next) => {
-  // This is the help route.
-  msg.reply(`${moduleData.name} ${moduleData.version} commands:\n` +
-  `"join (#channel)" - I start a new Music session and join the specified voice channel (or your current voice channel if you provide no channel).\n` +
-  `"leave" - I end the current session and leave the voice channel.\n` +
-  `"info #link" - I will fetch and display information about the specified Youtube video.\n` +
-  `"current" - I will display information about the song that's currently playing.\n` +
-  `"queue|list" - I will display the next five upcoming songs.\n` +
-  `"volume (#volume)" - I will display the current volume. If #volume is provided, I will change the volume.\n` +
-  `"play #link" - I will add the requested song to the queue.\n` +
-  `"skip" - I will skip the currently playing song and play the next song in line.\n` +
-  `"pause" - I will pause the playback.\n` +
-  `"resume" - I will resume the playback (if it's paused).\n` +
-  `"settings" - I will display the current settings.\n` +
-  `"settings set #queue|length|dupes #value" - I will change the setting for the specified setting to the provided value.`)
+  msg.channel.send({ embed: {
+    color: msg.self.colour,
+    author: msg.self.user.toAuthor(),
+    title: `${moduleData.name}, ${moduleData.version}`,
+    description: `${moduleData.name} allows Niddabot to become your guild's very own, personal DJ. Have her join a voice channel and let the groove begin!`,
+    fields: [
+      {
+        name: 'Supported sources',
+        value: `Currently, ${moduleData.name} only supports videos from https://youtube.com. This may be extended in the future.`
+      },
+      {
+        name: `General commands`,
+        value: [
+          '!music join - Makes Niddabot join the voice channel that you are currently in.',
+          '!music join #channel - Makes Niddabot join the specified channel. Replace #channel with either the name of the channel or its Id.',
+          '!music leave - Makes Niddabot leave the channel she\'s currently in and ends the Music Session.',
+          '!music info #youtube_link - Makes Niddabot fetch information about the provided song. Replace #youtube_link with the link to your desired song.'
+        ].join('\n')
+      }, {
+        name: 'Keeping the party poppin\'',
+        value: [
+          '!music play #youtube_link - Queues the song for playing (provided the settings allow for it). Replace #youtube_link with the link to your desired song.',
+          '!music current - Shows information about the currently playing song.',
+          '!music queue|list - Shows a list of upcoming songs.'
+        ].join('\n')
+      }, {
+        name: 'Operator commands',
+        value: [
+          '!music volume #volume - Changes the volume of the playback. Replace #volume with a number between 0 and 1 (such as 0.5).',
+          '!music skip - Skips the currently playing song. This command is also available to the user that requested the song.',
+          '!music delete #id - Removes the specified song from the queue. Replace #id with the number that you see next to the song when checking the queue.',
+          '!music clear - Clears the queue of all songs (does not cancel current song, if any).',
+          '!music pause - Pauses the playback of the current song.',
+          '!music resume - Resumes the playback of the current song, if paused.',
+          '!music settings - Displays the settings of the current Music Session.',
+          '!music settings set #setting #value - Changes the value of a setting of the current Music Session. Replace #setting with the setting to change (queue, length, or dupes) and #value with the desired new value.'
+        ].join('\n')
+      }
+    ],
+    timestamp: new Date(),
+    footer: msg.self.getFooter()
+  }})
 })
 
 // ADD GLOBAL SUDO CHECK
@@ -233,3 +230,28 @@ router.use('resume', (route, msg, next) => {
 })
 
 module.exports = router
+
+/**
+ * @typedef playData
+ * @type {Object}
+ * @property {number} start Where to start (in seconds).
+ * @property {number} volume The volume to play at.
+ */
+
+/**
+ * @typedef song
+ * @type {Object}
+ * @property {string} songUri URL of song to play.
+ * @property {ytdl.videoInfo} [songInfo] ytdl info about the song.
+ * @property {playData} songData Song modifiers.
+ * @property {songRequester} songRequester Name and Id of the song requester.
+ * @function toString
+ */
+
+/**
+ * @typedef songRequester
+ * @type {Object}
+ * @property {string} discordId
+ * @property {string} discordUsername
+ * @property {Date} createdAt
+ */

@@ -27,6 +27,7 @@ const accountSchema = new mongoose.Schema({
   email: { type: String, trim: true, required: [true, 'An e-mail address is required.'], validate: { validator: val => { return helpers.validateEmail(val) }, message: 'Invalid email format.' } }, // Email is optional.
   nationality: { type: String, required: [true, 'A nationality is required.'] },
   type: { type: String, enum: { values: ['user', 'admin'], message: 'Invalid user type.' }, default: 'user' }, // Users are default, admins are, well, admins.
+  flags: [ String ],
   status: { type: String, enum: { values: [ 'active', 'banned', 'locked', 'inactive' ], message: 'Invalid account status.' }, default: 'active' },
   comment: { type: String }, // Administration comment.
   discordUser: { type: String }, // This is a reference to the _id of a Discord User that is associated with this account.

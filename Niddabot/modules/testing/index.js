@@ -55,6 +55,12 @@ router.use('date', (route, msg, next) => {
   }
 })
 
+router.use('delay', async (route, msg, next) => {
+  const amount = parseInt(route.parts[0])
+  await helpers.wait(!isNaN(amount) && amount > 500 ? amount : 500)
+  msg.reply(`I waited ${amount}ms.${!route.hasArgument('time') ? ' This does little good without using the --time argument.' : ` Please check the "routing" time. It should be equal to, or slightly greater than, ${amount}.`}`)
+})
+
 router.use('reminder', async (route, msg, next) => {
   const results = await Reminders.find(route.getArgument('id') || route.parts[0])
   console.log(typeof results[0])
@@ -69,11 +75,16 @@ router.use('block', (route, msg, next) => {
   msg.channel.send(route.insertBlock(route.getText()))
 })
 
+router.use('message', (route, msg, next) => {
+  console.log(msg.niddabot.message)
+})
+
 router.use('cache', async (route, msg, next) => {
   const type = route.parts[0]
   const id = route.parts[1]
-  if (!type || !id) return next(new Error('missing data. Syntax: "user|server id".'))
-  const item = await msg.niddabot._cache.get(type, id)
+  if (type === 'all') return msg.channel.send(route.insertBlock(msg.niddabot.cache.all.join('\n')))
+  if (!type || !id) return next(new Error('missing data. Syntax: "all|user|server id?".'))
+  const item = await msg.niddabot.cache.get(type, id)
   return msg.reply(item.id ? `I found an item with Id ${item.id}.` : 'no match!')
 })
 

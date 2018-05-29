@@ -5,7 +5,7 @@ const helpers = require('../../../util/helpers')
 const router = new Router()
 
 router.use('*', async (route, msg, next) => {
-  if (!(await msg.niddabot.user).canPerform(1000)) return next(new Error('access denied.'))
+  if (!msg.niddabot.user.canPerform(1000)) return next(new Error('access denied.'))
   else return next()
 })
 router.use('', (route, msg, next) => {

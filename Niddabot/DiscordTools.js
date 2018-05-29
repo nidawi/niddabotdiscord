@@ -130,7 +130,7 @@ const discordRequest = async (url, options) => {
   */
 
   try {
-    console.log(`Making a ${fetchOptions.method} request to: ${fetchOptions.uri}`)
+    console.log(`Making a ${fetchOptions.method} request to: ${fetchOptions.uri}`) // eslint-disable-line
     const response = await request(fetchOptions)
     const rateStatus = { remaining: response.headers['x-ratelimit-remaining'], total: response.headers['x-ratelimit-limit'], reset: Math.round((new Date(response.headers['x-ratelimit-reset'] * 1000) - new Date()) / 1000) }
     _rateCache.set(fetchOptions.method, fetchOptions.uri, rateStatus)
@@ -331,20 +331,12 @@ const convertUserObject = data => {
  */
 
 /**
- * @returns {AppData}
- */
-const convertApplicationObject = data => {
-  return Object.assign(data, {
-    owner: new DiscordUser(data.owner)
-  })
-}
-
-/**
  * @typedef SelfData
  * @type {Object}
  * @property {AppData} applicationData
  * @property {DiscordUser} accountData
  * @property {DiscordChannel[]} channels
+ * @property {DiscordGuild[]} guilds
  */
 
 /**
@@ -358,12 +350,14 @@ const requestSelf = async () => {
     const appData = await Promise.all([
       discordRequest('oauth2/applications/@me'),
       discordRequest('users/@me'),
-      discordRequest('users/@me/channels')
+      discordRequest('users/@me/channels'),
+      discordRequest('users/@me/guilds')
     ])
     return {
-      applicationData: convertApplicationObject(appData[0].data),
-      accountData: new DiscordUser(appData[1].data),
-      channels: appData[2].data
+      applicationData: appData[0].data,
+      accountData: appData[1].data,
+      channels: appData[2].data,
+      guilds: appData[3].data
     }
   } catch (err) {
     console.log('Failed to perform "requestSelf". Error: ', err.messages)
@@ -424,8 +418,7 @@ const requestGuild = async (guildId, jsonFriendly = false) => {
       guild: !jsonFriendly ? guild : undefined
     })]))
     guild.channels = new Collection((await requestChannels(guildId, jsonFriendly)).map(a => [a.id, Object.assign(a, {
-      guild: !jsonFriendly ? guild : undefined,
-      webhooks: new Collection(a.webhooks.map(b => [b.id, Object.assign(b, { guild: !jsonFriendly ? guild : undefined })]))
+      guild: !jsonFriendly ? guild : undefined
     })]))
     guild.emojis = new Collection(response.data.emojis.map(a => [a.id, new DiscordEmoji(Object.assign(a, {
       guild: !jsonFriendly ? guild : undefined
@@ -440,6 +433,10 @@ const requestGuild = async (guildId, jsonFriendly = false) => {
   } else return undefined
 }
 
+const convertGuildObject = (data, jsonFriendly = false) => {
+
+}
+
 /**
  * Returns an array of objects representing the channels of a guild.
  * @async
@@ -452,13 +449,28 @@ const requestChannels = async (guildId, jsonFriendly = false) => {
   if (response && response.status === 200) {
     const data = response.data.filter(a => a.type !== 4) // Filter away categories, those aren't relevant.
     const channels = await Promise.all(data.map(async a => {
-      const channel = new DiscordChannel(a)
-      const hooks = await requestWebhooks(a.id)
-      channel.webhooks = hooks ? hooks.map(b => Object.assign(b, { user: new DiscordUser(b.user), channel: !jsonFriendly ? a : undefined })) : []
+      const channel = await convertChannelObject(a, jsonFriendly)
       return channel
     }))
     return channels
   } else return undefined
+}
+/**
+ * Returns an object representing a channel on Discord.
+ * @param {string} channelId
+ */
+const requestChannel = async (channelId, jsonFriendly = false) => {
+  if (!channelId) return undefined
+  const response = await discordRequest(`channels/${channelId}`)
+  if (response && response.success) {
+    const channel = await convertChannelObject(request.data, jsonFriendly)
+    return channel
+  }
+}
+
+const convertChannelObject = async (data, jsonFriendly = false) => {
+  const channel = new DiscordChannel(data)
+  return channel
 }
 
 const createDMChannel = async (userId) => {
@@ -579,7 +591,8 @@ const deleteMessages = async (channelId, messages) => {
 
 module.exports = {
   structs: {
-    DiscordChannel: DiscordChannel
+    DiscordChannel: DiscordChannel,
+    DiscordUser: DiscordUser
   },
   _rateCache: _rateCache,
   getAuthenticationString: generateAuthenticationString,
@@ -597,12 +610,16 @@ module.exports = {
   requestMembers: requestMembers,
   requestMember: requestMember,
   requestGuild: requestGuild,
+  convertGuildObject: convertGuildObject,
   requestChannels: requestChannels,
+  requestChannel: requestChannel,
+  convertChannelObject: convertChannelObject,
   requestEmoji: requestEmoji,
   requestMessage: requestMessage,
   requestMessages: requestMessages,
   deleteMessage: deleteMessage,
   deleteMessages: deleteMessages,
+  requestWebhooks: requestWebhooks,
   wait: wait
 }
 

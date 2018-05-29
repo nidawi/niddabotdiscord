@@ -10,6 +10,7 @@ const channelSchema = new mongoose.Schema({
   niddabotServer: { type: String, required: [true, 'Channels require an associated Guild / Server.'] }, // Associated Niddabot Server
   channelSettings: {
     active: { type: Boolean, required: true, default: true }, // Whether Niddabot is active in this channel.
+    debugChannel: { type: Boolean, required: true, default: false },
     responds: { type: Boolean, default: true },
     privilegeRequirement: { type: Number, default: 0 },
     commandsEnabled: { type: Boolean, default: true },

@@ -12,6 +12,7 @@ const serverSchema = new mongoose.Schema({
     commandsEnabled: { type: Boolean, default: true }, // Whether Niddabot is accepting commands. Global setting.
     notificationsEnabled: { type: Boolean, default: true }, // Whether Niddabot is accepting notifications. Global setting.
     moderationEnabled: { type: Boolean, default: false }, // Whether Niddabot is moderating this guild. Global setting.
+    channels: [ String ], // array of _id references of Niddabot channel objects.
     textResponseLevel: { type: String, enum: { values: ['full', 'limited', 'none'], message: 'Invalid response level.' }, default: 'full' }, // Currently unused response level setting.
     voiceResponseLevel: { type: String, enum: { values: ['full', 'limited', 'none'], message: 'Invalid response level.' }, default: 'full' } // Currently unused response level setting.
   },
