@@ -1,3 +1,7 @@
+/* eslint-disable no-unused-vars */
+const NiddabotUser = require('../../../structs/NiddabotUser')
+/* eslint-enable no-unused-vars */
+
 const helpers = require('./helpers')
 
 class Song {
@@ -19,7 +23,7 @@ class Song {
      */
     this.songData = input.songData
     /**
-     * @type {songRequester}
+     * @type {NiddabotUser}
      */
     this.songRequester = input.songRequester
   }

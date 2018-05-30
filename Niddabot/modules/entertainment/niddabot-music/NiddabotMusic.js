@@ -1,4 +1,8 @@
-// const Discordjs = require('discord.js') // Only use this for documentation purposes.
+/* eslint-disable no-unused-vars */
+const Discordjs = require('discord.js') // Only use this for documentation purposes.
+const Song = require('./Song')
+/* eslint-enable no-unused-vars */
+
 const ytdl = require('ytdl-core')
 const helpers = require('./helpers')
 
@@ -9,9 +13,6 @@ class NiddabotMusic {
      * @type {Song[]}
      */
     this.songQueue = []
-    /**
-     * @type {songRequester}
-     */
     this.createdBy = null
     /**
      * @type {Discordjs.VoiceChannel}
@@ -26,10 +27,10 @@ class NiddabotMusic {
      */
     this.currentDispatcher = null
     this.currentSettings = {
-      volume: 0.15,
+      volume: 0.2,
       start: 0,
-      queueLengthCap: 10,
-      maxSongLength: 300,
+      queueLengthCap: 20,
+      maxSongLength: 600,
       allowDuplicate: false
     }
     // Properties that use custom getters and setters.
@@ -143,12 +144,11 @@ class NiddabotMusic {
     }
   }
   /**
-   *
-   * @param {*} number
+   * @param {number} number
    * @returns {Song[]}
    */
-  getQueue (number = 5) {
-    return this.songQueue.slice(0, (number))
+  getQueue (number = 20) {
+    return this.songQueue.slice(0, number)
   }
   /**
    * Connects the Music module.
@@ -176,33 +176,38 @@ class NiddabotMusic {
    * Plays the provided song. If something is already playing, the song will be added to the queue instead.
    * @throws Lots of different errors.
    * @param {Song} song song
-   * @param {boolean} playNow Whether the song should be played right away. Default: false
+   * @param {{ playNow: boolean, sudoBypass: boolean }} modifiers
    * @returns {Song}
    */
-  async play (song, playNow = false) {
+  async play (song, modifiers = undefined) {
     // Like the most important function. This performs a bunch of verification checks and throws errors if things aren't alright.
     if (!song) throw new Error('you did not provide any song data.')
     else if (!song.songUri || !ytdl.validateLink(song.songUri)) throw new Error('you did not provide a valid song link.')
 
+    const config = Object.assign({
+      playNow: false,
+      sudoBypass: false
+    }, modifiers)
+
     try {
-      // Amount
-      if (this.count >= this.currentSettings.queueLengthCap && !playNow) throw new Error('the queue is currently full. Please let it clear up and try again.')
+      // Amount. Can be bypassed by sudo cmds.
+      if (this.count >= this.currentSettings.queueLengthCap && !config.playNow && !config.sudoBypass) throw new Error('the queue is currently full. Please let it clear up and try again.')
 
       // Fetch Youtube information about the song.
       song.songInfo = await ytdl.getInfo(song.songUri)
 
       // Check song length.
-      if (song.songInfo.length_seconds > this.currentSettings.maxSongLength && !playNow) throw new Error(`the provided song is too long (${helpers.secondsToMinutes(song.songInfo.length_seconds)}). The maximum song length is ${helpers.secondsToMinutes(this.currentSettings.maxSongLength)}.`)
+      if (song.songInfo.length_seconds > this.currentSettings.maxSongLength && !config.sudoBypass) throw new Error(`the provided song is too long (${helpers.secondsToMinutes(song.songInfo.length_seconds)}). The maximum song length is ${helpers.secondsToMinutes(this.currentSettings.maxSongLength)}.`)
 
       // Check duplicate
-      if (!this.allowDuplicate && this.inQueue(song.songInfo.title)) throw new Error('that song is already queued and duplicates are not allowed.')
+      if (!this.allowDuplicate && this.inQueue(song.songInfo.title) && !config.sudoBypass) throw new Error('that song is already queued and duplicates are not allowed.')
 
       if (song.songData.volume) { helpers._validateVolume(song.songData.volume); this.currentSettings.volume = song.songData.volume } // Check volume.
       if (song.songData.start && (song.songData.start < 0 || song.songData.start > song.songInfo.length_seconds)) throw new Error('you provided an invalid start time. It has to be between 0 and the total length of the song (in seconds).')
       else if (song.songData.start) this.currentSettings.start = song.songData.start
 
       // If we get this far, the song is valid and should be added to the queue.
-      if (playNow) {
+      if (config.playNow) {
         // This means that the song should be played right away.
         this.songQueue.unshift(song)
         this._playNext()
@@ -240,6 +245,18 @@ class NiddabotMusic {
       this._playNext()
     }
   }
+  /**
+   * Removes a song with the given id from the queue.
+   * @param {number} id
+   * @memberof NiddabotMusic
+   */
+  delete (id) {
+    const targetedSong = this.songQueue[id - 1]
+    if (targetedSong) {
+      this.songQueue.splice(id - 1, 1)
+      return targetedSong
+    }
+  }
   pause () {
     if (this.isPlaying && !this.isPaused) {
       this.currentDispatcher.pause()
@@ -249,6 +266,13 @@ class NiddabotMusic {
     if (!this.isPlaying && this.isPaused) {
       this.currentDispatcher.resume()
     }
+  }
+  /**
+   * Clears the entire queue. Does not cancel current playback.
+   * @memberof NiddabotMusic
+   */
+  clear () {
+    this.songQueue = []
   }
   _clear () {
     if (this.currentDispatcher && this.currentSong) {
@@ -266,7 +290,7 @@ class NiddabotMusic {
   toString (detailed = false) {
     return (detailed) ? `"${this.currentSong.songInfo.title}" by ${this.currentSong.songInfo.author.name}.\n` +
     `Time: ${this.time} / ${this.length}.\n` +
-    `Requested by: ${this.currentSong.songRequester.discordUsername}\n` +
+    `Requested by: ${this.currentSong.songRequester.discordUser.username}\n` +
     `Link: ${this.currentSong.songInfo.video_url}.` : `"${this.currentSong.songInfo.title}" by ${this.currentSong.songInfo.author.name} (${this.length}).`
   }
 }

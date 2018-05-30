@@ -8,7 +8,7 @@ const Song = require('./Song')
 const router = new Router()
 const moduleData = {
   name: 'Niddabot Music',
-  version: 'v1.0.0'
+  version: 'v1.1.0'
 }
 
 // Niddabot Music Routes
@@ -57,21 +57,13 @@ router.use('', (route, msg, next) => {
   }})
 })
 
-// ADD GLOBAL SUDO CHECK
-router.use('*', async (route, msg, next) => {
-  route.isSudo = (route.hasArgument('sudo') && (await msg.niddabot.user).canPerform(1000))
-  next()
-})
-
-router.use(['join', 'leave'], async (route, msg, next) => {
+router.use(['join', 'leave'], (route, msg, next) => {
   // Deny access to these routes if the user is not authorized.
   // Anyone can make Niddabot join a channel.
   if (!msg.session.niddabotMusic) return next() // If Niddabot hasn't been initiated we move on. The "leave" route will take care of cases.
 
-  // Make sure the user is loaded as it will be needed for these.
   // Unless you are a Server Moderator or above, you cannot make Niddabot change channel or leave.
-  const user = await msg.niddabot.user
-  if (!user.canPerform(200)) return next(new Error('I am already assigned to a channel. You need elevated permissions to make me move.'))
+  if (!msg.niddabot.user.canPerform(200)) return next(new Error('I am already assigned to a channel. You need elevated permissions to make me move.'))
 
   next()
 })
@@ -112,10 +104,11 @@ router.use('leave', async (route, msg, next) => {
     }
   } catch (err) { return next(err) }
 })
+
 router.use('info', async (route, msg, next) => {
   // Provides Youtube info about the specified link.
   try {
-    return msg.reply(await helpers.getVideoInfo(route.urls[0] || route.parts[0] || route.getArgument('song'), true))
+    return msg.channel.send(route.insertBlock(await helpers.getVideoInfo(route.urls[0] || route.parts[0] || route.getArgument('song'), true)))
   } catch (err) {
     msg.reply('you did not provide a valid song link.')
   }
@@ -132,43 +125,19 @@ router.use('current', (route, msg, next) => {
   }
 })
 
-router.use(['queue', 'list', 'volume', 'play', 'skip', 'pause', 'resume', 'settings'], (route, msg, next) => {
+router.use(['queue', 'list', 'volume', 'play', 'skip', 'pause', 'resume', 'settings', 'clear', 'delete'], (route, msg, next) => {
   // Every route below requires an active session.
   if (!msg.session.niddabotMusic) return next(new Error('there is currently no music session active. You can start one by having me join a channel!'))
-  next()
+  else next()
 })
 
-const settingsRouter = new Router()
-settingsRouter.use('', (route, msg, next) => {
-  msg.reply(msg.session.niddabotMusic.getSettings())
-})
-settingsRouter.use('set', async (route, msg, next) => {
-  if (!msg.niddabot.user.canPerform(200)) return next(new Error('you are not authorized to change my settings.'))
-  const newValue = route.parts[1]
-  if (!newValue) next(new Error('you must specify a new value.'))
-  switch (route.parts[0]) {
-    case 'queue':
-      msg.session.niddabotMusic.queueLengthCap = newValue
-      msg.reply(`Setting "Queue Cap" has been set to ${msg.session.niddabotMusic.queueLengthCap}.`)
-      break
-    case 'length':
-      msg.session.niddabotMusic.maxSongLength = newValue
-      msg.reply(`Setting "Maximum Song Length" has been set to ${msg.session.niddabotMusic.maxSongLength}.`)
-      break
-    case 'dupes':
-      msg.session.niddabotMusic.allowDuplicate = newValue
-      msg.reply(`Setting "Allow Song Duplicates" has been set to ${msg.session.niddabotMusic.allowDuplicate}.`)
-      break
-    default: return next(new Error((route.parts[0]) ? `"${route.parts[0]}" is not a valid setting.` : `you must specify a setting to change.`))
-  }
-})
-
-router.use('settings', settingsRouter)
+router.use('settings', require('./settings'))
 
 router.use(['queue', 'list'], (route, msg, next) => {
+  // Display current queue.
   const currentQueue = msg.session.niddabotMusic.getQueue()
   if (currentQueue.length === 0) msg.reply(`the song queue is currently empty.`)
-  else msg.reply('the next songs are:\n' + currentQueue.map((a, i) => { return `${(i + 1)}. ${a.toString()}` }).join('\n'))
+  else msg.channel.send(route.insertBlock(currentQueue.map((a, i) => { return `${(i + 1)}. ${a.toString()}` }).join('\n')))
 })
 router.use('volume', async (route, msg, next) => {
   // Change the playback volume.
@@ -189,33 +158,37 @@ router.use('play', async (route, msg, next) => {
   // Cannot play something if there is no current session.
   // Try to play the provided song. Catch any and all errors.
   try {
+    const playNow = route.hasArgument('playnow') && msg.niddabot.user.canPerform(999)
+    const sudoBypass = route.hasArgument('sudo') && msg.niddabot.user.canPerform(999)
+
     /**
      * @type {Song}
      */
     const song = await msg.session.niddabotMusic.play(new Song({
       songUri: route.getArgument('song') || route.urls[0] || route.parts[0],
       songData: { start: route.getArgument('start'), volume: route.getArgument('volume') },
-      songRequester: { discordId: msg.author.id, discordUsername: msg.author.username, createdAt: new Date() }
-    }), route.isSudo)
-    if (!route.isSudo && msg.session.niddabotMusic.getQueue().length > 0) msg.reply(`${song.toShortString()} has been added to the queue at position ${msg.session.niddabotMusic.count}.`)
+      songRequester: msg.niddabot.user
+    }), {
+      playNow: playNow,
+      sudoBypass: sudoBypass
+    })
+    if (!playNow && msg.session.niddabotMusic.getQueue().length > 0) msg.reply(`${song.toShortString()} has been added to the queue at position ${msg.session.niddabotMusic.count}.`)
   } catch (err) {
     return next(err)
   }
 })
-router.use(['skip', 'pause', 'resume'], async (route, msg, next) => {
+router.use(['pause', 'resume', 'delete', 'clear'], (route, msg, next) => {
   // The routes below this point require authorization.
-  const user = await msg.niddabot.user
-  if (!user.canPerform(200)) return next(new Error('you are not authorized to issue this command.'))
-
+  if (!msg.niddabot.user.canPerform(200)) return next(new Error('you are not authorized to issue this command.'))
   next()
 })
-router.use(['skip', 'pause'], async (route, msg, next) => {
+router.use(['skip', 'pause'], (route, msg, next) => {
   // These routes require a song to be playing to be issued.
   if (!msg.session.niddabotMusic.isPlaying) return next(new Error('no song is currently playing.'))
-
   next()
 })
 router.use('skip', (route, msg, next) => {
+  if (!msg.niddabot.user.canPerform(200) && msg.session.niddabotMusic.currentSong.songRequester.discordId !== msg.niddabot.user.discordId) return next(new Error('you are not authorized to issue this command.'))
   msg.session.niddabotMusic.skip()
 })
 router.use('pause', (route, msg, next) => {
@@ -227,6 +200,17 @@ router.use('resume', (route, msg, next) => {
   if (!msg.session.niddabotMusic.isPaused) return next(new Error('no song is currently paused.'))
   msg.session.niddabotMusic.resume()
   msg.reply(`the playback of the current song has been resumed.`)
+})
+
+router.use('delete', (route, msg, next) => {
+  const deletedSong = msg.session.niddabotMusic.delete(parseInt(route.parts[0]))
+  if (deletedSong) {
+    msg.reply(`I have removed ${deletedSong.toShortString()} from the queue.`)
+  } else msg.reply('no song with that Id was found.')
+})
+router.use('clear', (route, msg, next) => {
+  msg.session.niddabotMusic.clear()
+  msg.reply('I have cleared the queue as you requested.')
 })
 
 module.exports = router

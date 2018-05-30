@@ -13,6 +13,7 @@ const servers = require('./ServerTools')
  * @property {string} name
  * @property {string} [pass]
  * @property {string} avatar
+ * @property {string[]} flags
  * @property {string} email
  * @property {string} type
  * @property {string} nationality
@@ -81,6 +82,7 @@ const transformAccount = acc => {
     id: acc._id,
     name: acc.name,
     pass: '',
+    flags: acc.flags,
     avatar: acc.avatar,
     email: acc.email,
     type: acc.type,
@@ -148,10 +150,11 @@ const verifyDatabase = async (log = false) => {
     try {
       examinerAccount = await createAccount({
         name: 'examiner',
-        pass: '1dv430',
+        pass: process.env.EXAMINER_PW,
         email: 'unknown_email@lnu.se',
         nationality: 'Sweden',
         type: 'user',
+        flags: ['examiner'],
         acceptedTerms: true,
         receiveEmails: true
       })
@@ -173,14 +176,17 @@ const verifyDatabase = async (log = false) => {
  * @param {string} id Niddabot Account Id.
  * @returns {NiddabotAccount}
  */
-const getNiddabotAccount = async (id, jsonFriendly = false) => {
+const getNiddabotAccount = async (id, jsonFriendly = false, userOverride = undefined) => {
   const fetchedAccount = (Object.getOwnPropertyNames(id).indexOf('name') === -1) ? await fetchAccountById(id) : await getAccount(id.name, id.password)
   if (!fetchAccount) return undefined
   const account = new NiddabotAccount(fetchedAccount)
 
-  const user = await users.getNiddabotUser(fetchedAccount.discordUser, undefined)
-  account.discordUser = (user.exists) ? user : undefined
-  // console.log('getNiddabotUser exists', JSON.stringify(user))
+  if (userOverride) account.discordUser = userOverride
+  else {
+    const user = await users.getNiddabotUser(fetchedAccount.discordUser, undefined, jsonFriendly)
+    account.discordUser = (user.exists) ? user : undefined
+  }
+
   account.ownedServers = await Promise.all(fetchedAccount.ownedServers.map(a => servers.getNiddabotServer(a, undefined, jsonFriendly)))
 
   return account

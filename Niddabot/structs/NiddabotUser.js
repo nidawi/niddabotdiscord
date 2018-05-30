@@ -1,6 +1,7 @@
 // Niddabot User Class Wrapper
 /* eslint-disable no-unused-vars */
 const DiscordUser = require('./DiscordUser')
+const niddabotAccount = require('./NiddabotAccount')
 const NiddabotReminder = require('./NiddabotReminder')
 const Collection = require('../components/Collection')
 /* eslint-enable no-unused-vars */
@@ -27,6 +28,9 @@ class NiddabotUser {
      * @type {RankData}
      */
     this.niddabotRank = user.niddabotRank
+    /**
+     * @type {niddabotAccount}
+     */
     this.niddabotAccount = user.niddabotAccount
     this.niddabotServers = user.niddabotServers
     this.status = user.status

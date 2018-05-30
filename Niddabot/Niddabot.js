@@ -68,7 +68,7 @@ class Niddabot {
         niddabotSession.headRouter = niddabotRouter
         console.log(`Required Niddabot Data has been loaded:\n` +
         `Application: ${niddabotSession.application.name} (${niddabotSession.application.id})\n` +
-        `Owner: ${niddabotSession.application.owner.fullName} (${niddabotSession.application.owner.id})\n`,
+        `Owner: ${niddabotSession.application.owner.fullName} (${niddabotSession.application.owner.id})\n` +
         `User: ${niddabotSession.user.username} (${niddabotSession.user.id})\n` +
         `Home Server: ${niddabotSession.home.name} (${niddabotSession.home.id})\n` +
         `Active DMs: ${niddabotSession.channels.length}`)
@@ -90,14 +90,23 @@ class Niddabot {
         // When a new member joins, we need to update the Guild object and send a customizable greeting.
         if (member) {
           const server = await niddabotCache.getServer(member.guild.id)
-          // const user = await niddabotCache.getUser(member.user.id)
           const guild = server.guild
           if (server && guild) {
-            const dMember = await guild.addMember(member.user.id)
+            const dMember = await guild.addMember(member.user.id) // Add the member to the guild.
             if (dMember) {
               console.log(dMember.user.fullName, 'has joined guild', guild.name)
+              // Welcome the user to the server, if they have a system channel.
+              // Currently no settings for this, add later.
               const channel = member.guild.channels.get(guild.systemChannel)
               if (channel) channel.send(`Welcome, ${member.user.username}, to ${guild.name}!`)
+
+              if (guild.isHomeServer) {
+                // If the guild is Niddabot's home server, niddabot account flags are taken into account (flags are used to assign Tester/Examiner ranks etc.).
+                const user = await niddabotCache.getUser(member.user.id)
+                if (user && user.niddabotAccount && user.niddabotAccount.flags.includes('examiner')) {
+                  // If the user is flagged as an examiner, we will assign them the Discord Rank Tester and the Niddabot Rank Admin.
+                }
+              }
             } else console.log('member already exists or something went wrong along the way!')
           } else console.log('Somehow the guild', member.guild.name, member.guild.id, 'does not exist.')
         }

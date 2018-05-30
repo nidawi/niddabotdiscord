@@ -2,10 +2,19 @@
 const users = require('../UserTools')
 const servers = require('../ServerTools')
 
+/* eslint-disable no-unused-vars */
 const NiddabotServer = require('../structs/NiddabotServer')
 const NiddabotUser = require('../structs/NiddabotUser')
+/* eslint-enable no-unused-vars */
 
+/**
+ * @class NiddabotCache
+ */
 class NiddabotCache {
+  /**
+   * Creates an instance of NiddabotCache.
+   * @memberof NiddabotCache
+   */
   constructor () {
     /**
      * @type {Map<string, NiddabotServer|NiddabotUser>}
@@ -47,7 +56,7 @@ class NiddabotCache {
   async _getUser (id) {
     const user = await users.getNiddabotUser(undefined, id)
 
-    if (user) {
+    if (user.exists) {
       console.log(`[Niddabot Cache] Saved a new user with Id ${id} [${user.discordUser.fullName}].`)
       this._cache.set(`user:${id}`, user)
       return user
@@ -81,6 +90,12 @@ class NiddabotCache {
     return channel
   }
 
+  /**
+   * @param {"server"|"guild"|"user"} type
+   * @param {string} id
+   * @returns {NiddabotServer|NiddabotUser}
+   * @memberof NiddabotCache
+   */
   async get (type, id) {
     switch (type) {
       case 'server': case 'guild':
@@ -94,6 +109,11 @@ class NiddabotCache {
     }
   }
 
+  /**
+   * Applies cache data to the provided msg object.
+   * @param {*} msg
+   * @memberof NiddabotCache
+   */
   async apply (msg) {
     const server = msg.guild ? await this.getServer(msg.guild.id) : undefined
     const user = await this.getUser(msg._delegate || msg.author.id)
@@ -112,13 +132,3 @@ class NiddabotCache {
 }
 
 module.exports = NiddabotCache
-
-/**
- * @typedef NiddabotData
- * @type {Object}
- * @property {NiddabotServer} server
- * @property {NiddabotUser} user
- * @property {DiscordGuild} [guild]
- * @property {DiscordChannel} channel
- * @property {NiddabotCache} cache
- */

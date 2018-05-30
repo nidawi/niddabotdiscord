@@ -1,4 +1,4 @@
-const DiscordGuild = require('./DiscordGuild')
+const DiscordGuild = require('./DiscordGuild') // eslint-disable-line
 
 /**
  * @typedef ServerSettings
@@ -57,7 +57,12 @@ class NiddabotServer {
      */
     this.guild = undefined
   }
-  randomizeGreeting () {
+
+  get exists () {
+    return this.id !== undefined
+  }
+
+  randomizeGreeting (username) {
     return guildWelcomeMessages[Math.floor(Math.random() * guildWelcomeMessages.length)]
   }
 

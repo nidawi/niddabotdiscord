@@ -1,5 +1,5 @@
-const User = require('./NiddabotUser')
-const Server = require('./NiddabotServer')
+const User = require('./NiddabotUser') // eslint-disable-line
+const Server = require('./NiddabotServer') // eslint-disable-line
 
 /**
  * @typedef UnpopulatedAccount
@@ -8,6 +8,7 @@ const Server = require('./NiddabotServer')
  * @property {string} name
  * @property {string} [pass]
  * @property {string} avatar
+ * @property {string[]} flags
  * @property {string} email
  * @property {string} type
  * @property {string} nationality
@@ -31,6 +32,7 @@ class NiddabotAccount {
   constructor (acc) {
     this.id = acc.id
     this.name = acc.name
+    this.flags = acc.flags
     this.email = acc.email
     this.type = acc.type
     this.nationality = acc.nationality
@@ -60,6 +62,14 @@ class NiddabotAccount {
     Object.defineProperty(this, 'exists', {
       get: () => { return (this.id) }
     })
+  }
+
+  toString () {
+    return `` +
+      `${this.name} (${this.id}) [${this.type}]\n` +
+      `Account Flags: ${Array.isArray(this.flags) ? this.flags.join(', ') : 'none'}\n` +
+      `Account Status: ${this.status}\n` +
+      `Account User: ${this.discordUser ? this.discordUser.fullName : 'none'}`
   }
 }
 

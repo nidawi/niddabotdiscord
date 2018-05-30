@@ -355,7 +355,7 @@ const requestSelf = async () => {
     ])
     return {
       applicationData: appData[0].data,
-      accountData: appData[1].data,
+      accountData: new DiscordUser(appData[1].data),
       channels: appData[2].data,
       guilds: appData[3].data
     }

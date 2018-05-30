@@ -120,7 +120,7 @@ const getUser = async (id, transform = true) => {
  * @param {string} discordId
  * @returns {NiddabotUser}
  */
-const getNiddabotUser = async (id, discordId) => {
+const getNiddabotUser = async (id, discordId, jsonFriendly = false) => {
   const user = ((discordId) ? await findUser(discordId) : await getUser(id)) || { discordId: discordId }
 
   const createdUser = new NiddabotUser(user)
@@ -129,11 +129,11 @@ const getNiddabotUser = async (id, discordId) => {
   // Transform and Load Niddabot Rank
   createdUser.niddabotRank = (user.niddabotRank) ? await ranks.getRankById(user.niddabotRank.rankId) : undefined
   // Load reminders, if any
-  createdUser.reminders = new Collection((await NiddabotReminder.find(user.discordId)).map(a => [a.id, Object.assign(a, { _user: createdUser })]))
+  if (!jsonFriendly) createdUser.reminders = new Collection((await NiddabotReminder.find(user.discordId)).map(a => [a.id, Object.assign(a, { _user: createdUser })]))
 
   if (createdUser.niddabotAccount) {
     const accounts = require('./AccountTools')
-    createdUser.niddabotAccount = await accounts.fetchAccountById(createdUser.niddabotAccount)
+    createdUser.niddabotAccount = await accounts.getNiddabotAccount(createdUser.niddabotAccount, false, createdUser)
   }
 
   return createdUser

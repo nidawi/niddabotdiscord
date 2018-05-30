@@ -41,7 +41,7 @@ class DiscordChannel {
     /**
      * @type {Map<string, DiscordWebhook>}
      */
-    this.webhooks = undefined
+    this.webhooks = []
 
     /**
      * @type {DiscordGuild}

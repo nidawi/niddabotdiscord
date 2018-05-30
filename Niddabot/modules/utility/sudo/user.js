@@ -11,8 +11,8 @@ router.use('', (route, msg, next) => {
   `${router.getUsedPaths().join(', ')}`)
 })
 router.use(/\d+/, async (route, msg, next) => {
-  const user = await msg.niddabot.cache.get('user', route.getArgument('id') || route.currentRoute)
-  if (user.exists) msg.channel.send(route.insertBlock(user.toString(true)))
+  const user = await msg.niddabot.cache.getUser(route.getArgument('id') || route.currentRoute)
+  if (user && user.exists) msg.channel.send(route.insertBlock(user.toString(true)))
   else msg.reply('I did not find anyone with that id.')
 })
 

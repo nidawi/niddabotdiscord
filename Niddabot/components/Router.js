@@ -149,6 +149,7 @@ class Router {
       if (err.message.length > 0) data.reply(err.message)
       console.log(`Wait Done: ${data.content}. Error occured.`)
       console.log(`Error: ${err.message}`)
+      console.log(err.stack)
     }
   }
   getModuleList (asString = true) {

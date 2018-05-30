@@ -52,6 +52,7 @@ configRouter.use('set', (route, msg, next) => {
 
 router.use('config', configRouter)
 router.use('user', require('./user'))
+router.use('account', require('./account'))
 router.use('channel', require('./channel'))
 
 module.exports = router

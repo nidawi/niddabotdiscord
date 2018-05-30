@@ -96,6 +96,8 @@ class DiscordGuild {
     Object.defineProperty(this, 'default', { get: () => this.channels.get(this.systemChannel) })
   }
 
+  get isHomeServer () { return this.id === process.env.NIDDABOT_HOME_ID }
+
   /**
    * Adds a user to this guild.
    * @param {string} userId The user's Discord Id.
@@ -125,7 +127,6 @@ class DiscordGuild {
     if (data instanceof DiscordChannel) {
       if (this.channels.has(data.id)) return
       data.guild = this
-      data.webhooks = new Collection(data.webhooks.map(b => [b.id, Object.assign(b, { guild: this })]))
       this.channels.set(data.id, data)
       return data
     } else if (typeof data === 'string') {
@@ -133,7 +134,6 @@ class DiscordGuild {
       if (this.channels.has(data)) return
       const channel = await this._tools.requestChannel(data)
       channel.guild = this
-      channel.webhooks = new Collection(channel.webhooks.map(b => [b.id, Object.assign(b, { guild: this })]))
       this.channels.set(channel.id, channel)
       return channel
     }
@@ -145,7 +145,7 @@ class DiscordGuild {
    * @returns {string}
    */
   toString (debug = false) {
-    return !debug ? `${this.name} (${this.id}) [${this.region}]\n` +
+    return !debug ? `${this.name} (${this.id}) [${this.region}]${this.isHomeServer ? ' *' : ''}\n` +
       `This guild is owned by ${this.owner.fullName}.\n` +
       `This guild has ${this.channels.length} channels, and ${this.default ? `the default one is ${this.default.name}` : `it has no default channel`}.\n` +
       `This guild has ${this.members.length} members.`
