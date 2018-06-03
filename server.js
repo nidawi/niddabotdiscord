@@ -17,9 +17,11 @@ require('./config/database').create()
     // Verify users.
     const adminUser = await Users.verifyDatabase(true, adminAccount.id)
     // Make sure that the Admin User & the Admin Account are connected.
-    if (!adminAccount.discordUser || adminAccount.discordUser !== adminUser.id) {
+    if (!adminAccount.discordUser || adminAccount.discordUser.toString() !== adminUser.id.toString()) {
       console.log('Admin Account and Admin User are not linked. Attempting to fix...')
-      await Accounts.updateAccount(adminAccount.id, { discordUser: adminUser.id })
+      adminAccount._document.discordUser = adminUser.id
+      await adminAccount._document.save()
+      // await Accounts.updateAccount(adminAccount.id, { discordUser: adminUser.id })
     }
     console.log('Database START UP successful.')
   })

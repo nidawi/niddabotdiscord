@@ -16,11 +16,12 @@ const addUser = async (discordId, niddabotAccountId = undefined, niddabotRank = 
   const userInfo = (tokenData) ? await discord.requestUser(tokenData.accessToken, undefined) : await discord.requestUser(undefined, discordId)
   const user = await findUser(userInfo.discordId || discordId, false) || new User() // Fetch existing user or create a new one.
 
-  if (typeof niddabotAccountId === 'string') user.niddabotAccount = niddabotAccountId // Add a link to a Niddabot Account, if any.
+  if (niddabotAccountId) user.niddabotAccount = niddabotAccountId.toString() // Add a link to a Niddabot Account, if any.
 
   const availableRanks = (await ranks.getRanks()).map(a => a.name) // Verify that the provided rank exists.
   const rank = await ranks.getRank(availableRanks.includes(niddabotRank) ? niddabotRank : 'User')
   user.niddabotRank.rankId = rank.id // Add a link to the specified Niddabot rank, if none, normal user.
+  user.niddabotRank.rankSource = 'default'
 
   if (tokenData) user.tokenData = tokenData
   user.discordId = userInfo.id || userInfo.discordId
@@ -243,7 +244,7 @@ const verifyDatabase = async (log, adminId) => {
   // Verify admin account
   if (!adminId) throw new Error('adminId is missing in user database verification')
   const adminUser = await addUser(process.env.NIDDABOT_DEV_ID, adminId, 'Super User')
-  if (adminUser && log) console.log(`Found Admin User with Discord Id ${adminUser.discordId} and account Id ${adminUser.niddabotAccount}.`)
+  if (adminUser && log) console.log(`Found Admin User with Discord Id ${adminUser.discordId} and account Id ${adminUser.niddabotAccount} and user rank ${adminUser.niddabotRank}.`)
   else if (!adminUser) throw new Error('No Admin User found.')
   const users = await User.find()
   if (Array.isArray(users) && log) console.log(`Found ${users.length} users.`)
