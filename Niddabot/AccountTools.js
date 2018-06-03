@@ -125,8 +125,8 @@ const getAccount = async (name, password) => {
  */
 const verifyDatabase = async (log = false) => {
   const accounts = await Account.find()
-  let adminAccount = await fetchAccount('nidawi', false) // Check if Admin account exists.
-  let examinerAccount = await fetchAccount('examiner', false)
+  let adminAccount = await fetchAccount('nidawi') // Check if Admin account exists.
+  let examinerAccount = await fetchAccount('examiner') // Check if examiner account exists.
   if (!adminAccount) {
     // Admin account does not exist. Create it.
     if (log) console.log('Admin Account missing. Creating...')
@@ -165,7 +165,7 @@ const verifyDatabase = async (log = false) => {
   }
 
   if (log) {
-    console.log(`Admin Account exists. Name: ${adminAccount.name}, Id: ${adminAccount._id}, Created: ${adminAccount.createdAt}`)
+    console.log(`Admin Account exists. Name: ${adminAccount.name}, Id: ${adminAccount.id}, Created: ${adminAccount.createdAt}`)
     console.log(`Examiner Account exists. Name: ${examinerAccount.name}, Id: ${examinerAccount.id}, Created: ${examinerAccount.createdAt}`)
     console.log(`Found a total of ${accounts.length} accounts.`)
   }
