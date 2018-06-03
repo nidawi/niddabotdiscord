@@ -79,6 +79,7 @@ const fetchAccountById = async (id, transform = true) => {
  */
 const transformAccount = acc => {
   return {
+    _document: acc,
     id: acc._id,
     name: acc.name,
     pass: '',

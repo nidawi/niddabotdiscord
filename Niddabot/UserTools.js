@@ -241,8 +241,9 @@ const transformUser = user => {
   */
 const verifyDatabase = async (log, adminId) => {
   // Verify admin account
+  if (!adminId) throw new Error('adminId is missing in user database verification')
   const adminUser = await addUser(process.env.NIDDABOT_DEV_ID, adminId, 'Super User')
-  if (adminUser && log) console.log(`Found Admin User with Discord Id ${adminUser.discordId}`)
+  if (adminUser && log) console.log(`Found Admin User with Discord Id ${adminUser.discordId} and account Id ${adminUser.niddabotAccount}.`)
   else if (!adminUser) throw new Error('No Admin User found.')
   const users = await User.find()
   if (Array.isArray(users) && log) console.log(`Found ${users.length} users.`)
