@@ -22,7 +22,8 @@ const availableGreetings = [
   'Hey!',
   '*waves*',
   '*swooshes by*',
-  '*appears in a puff of smoke*'
+  '*appears in a puff of smoke*',
+  '*tips fedora*'
 ]
 const availableContentMissingComment = [
   ` about... something. You never told me what, exactly.`,
@@ -101,13 +102,20 @@ class NiddabotReminder {
         return refs.slice(0, NiddabotReminder.maxReferences)
       } else return []
     }
+    const validateBody = body => {
+      if (body) {
+        if (body.length > 800) throw new Error('the optional "about" can be no longer than 800 characters.')
+
+        return body
+      }
+    }
 
     // Define our Reminder document.
     const _document = reminder instanceof Reminder ? reminder
       : new Reminder({
         userId: reminder.user.discordId,
         expiration: validateDate(reminder.expiration),
-        body: reminder.body,
+        body: validateBody(reminder.body),
         references: validateReferences(reminder.references)
       })
 
@@ -117,7 +125,7 @@ class NiddabotReminder {
       expiration: { get: () => _document.expiration, set: value => { _document.expiration = validateDate(value) } },
       references: { get: () => _document.references, set: value => { _document.references = validateReferences(value) } },
       user: { get: () => this._user || _document.userId, set: value => { _document.userId = value.discordId } },
-      body: { get: () => _document.body, set: value => { _document.body = value } },
+      body: { get: () => _document.body, set: value => { _document.body = validateBody(value) } },
       enabled: { get: () => _document.enabled, set: value => { _document.enabled = value } },
       updatedAt: { get: () => _document ? _document.updatedAt : undefined },
       createdAt: { get: () => _document ? _document.createdAt : undefined }
