@@ -6,11 +6,11 @@ const getValue = value => {
 }
 
 module.exports = (route, msg, next) => {
-  if (route.parts[0] === 'die') msg.channel.send(`\`${msg.author.username} rolls a die and got a ${(Math.floor(Math.random() * 6) + 1)}!\``)
+  if (route.parts[0] === 'die') msg.channel.send(route.insertBlock(`${msg.author.username} rolls a die and got a ${(Math.floor(Math.random() * 6) + 1)}!`))
   else {
     const max = getValue(route.parts[0] || route.getArgument('max')) || 100
     const _min = getValue(route.getArgument('min')) || 1
     const min = (_min < max) ? _min : 1
-    msg.channel.send(`\`${msg.author.username} rolls the dice and scores ${(Math.floor(Math.random() * ((max + 1) - min)) + min)}! (${min}-${max})\``)
+    msg.channel.send(route.insertBlock(`${msg.author.username} rolls the dice and scores ${(Math.floor(Math.random() * ((max + 1) - min)) + min)}! (${min}-${max})`))
   }
 }

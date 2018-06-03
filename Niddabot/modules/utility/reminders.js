@@ -3,7 +3,7 @@ const Reminder = require('../../structs/NiddabotReminder')
 const helpers = require('../../util/helpers')
 const router = new Router()
 
-const referenceRegexp = /^<@(message|user|channel|guild|webhook):\w+>$/
+const referenceRegexp = /^<@(message|user|channel|guild):\w+>$/
 const parseReminderInput = route => {
   try {
     const timeInput = `${route.currentRoute} ${route.parts.slice(0, helpers.getMatchingOrDefault(route.parts.length, a => a > -1, route.parts.indexOf('about'), route.parts.findIndex(a => referenceRegexp.test(a)))).join(' ')}`
@@ -40,16 +40,17 @@ router.use('', (route, msg, next) => {
         name: 'Reminder References',
         value: ['<@message:messageId> - adds a reference to a specific message.',
           '<@user:userId> - adds a reference to a specific user.',
-          '<@channel:channelId> - adds a reference to a specific channel.', 
+          '<@channel:channelId> - adds a reference to a specific channel.',
           '<@guild:guildId> - adds a reference to a specific guild.'].join('\n') +
           '\n*remember: you can get these Ids by either enabling Devmode in your client or by typing !channel, !guild, etc. in a channel where I am.*'
       }, {
         name: 'Restrictions',
         value: [
           `1. You can have a maximum of ${Reminder.maxReminders} reminders active at a time.`,
-          `2. You can have a maximum of ${Reminder.maxReferences} references per reminder.`,
+          `2. You can have a maximum of ${Reminder.maxReferences} ${Reminder.maxReferences !== 1 ? 'references' : 'reference'} per reminder.`,
           `3. A reminder has to expire _at least_ 10 seconds after its creation. Any less and you should consider using the !timer feature instead.`,
-          `4. A reminder has to expire no later than two months after its creation. This service is not intended to be a complete calendar replacement.`
+          `4. A reminder has to expire no later than two months after its creation. This service is not intended to be a complete calendar replacement.`,
+          '5. The optional "about" can be no longer than 800 characters.'
         ].join('\n')
       }, {
         name: 'Notes about time zones',
@@ -84,7 +85,7 @@ router.use('check', (route, msg, next) => {
 router.use('list', (route, msg, next) => {
   // List all user reminders
   const reminders = msg.niddabot.user.reminders.values().map((a, i) => `${i + 1}. ${a.toString(route.hasArgument('debug') && msg.niddabot.user.canPerform(999))}`)
-  if (reminders.length < 1) next(new Error('you have no active reminders.'))
+  if (!reminders || reminders.length < 1) return next(new Error('you have no active reminders.'))
   else msg.channel.send(route.insertBlock(reminders.join('\n')))
 })
 router.use('delete', async (route, msg, next) => {
@@ -104,21 +105,24 @@ router.use('delete', async (route, msg, next) => {
 })
 router.use('clear', async (route, msg, next) => {
   // Clears all of a user's reminders.
-
+  const reminders = msg.niddabot.user.reminders.values().map(a => a.delete())
+  if (!reminders || reminders.length < 1) return next(new Error('you have no active reminders.'))
+  await Promise.all(reminders)
+  msg.reply('all of your reminders have been deleted successfully.')
 })
 router.use(/at|in|on|tomorrow/, async (route, msg, next) => {
   // Verify the amount of reminders. You cannot have more than 5.
-  if (msg.niddabot.user.reminders.size >= Reminder.maxReminders && !msg.niddabot.user.canPerform(999)) return next(new Error('you already have the maximum amount of active reminders. Please delete one if you wish to create a new one.'))
+  if (msg.niddabot.user.reminders.size >= Reminder.maxReminders && !(route.hasArgument('sudo') && msg.niddabot.user.canPerform(999))) return next(new Error('you already have the maximum amount of active reminders. Please delete one if you wish to create a new one.'))
 
   // Create a new reminder at the given time with the given content.
   const reminderData = parseReminderInput(route) // parse input. this will throw errors if need be.
   if (reminderData) {
     // Save the reminder. This throws errors.
-    const newReminder = new Reminder({ expiration: reminderData.time, user: msg.niddabot.user, references: reminderData.refs, body: reminderData.about })
+    const newReminder = new Reminder({ expiration: reminderData.time, user: msg.niddabot.user, references: { refs: reminderData.refs, channel: msg.niddabot.channel.id }, body: reminderData.about })
     await newReminder.save() // Save the reminder.
     if (newReminder && newReminder.id) {
       msg.niddabot.user.reminders.set(newReminder.id, newReminder) // add the new reminder to the user
-      msg.reply(`your reminder (${newReminder.name}) has been saved successfully. It is set to expire ${newReminder.expiration.toLocaleString()}.`)
+      msg.reply(`your reminder (${newReminder.name}) has been saved successfully. It is set to expire ${newReminder.expiration.toLocaleString()} (in ${newReminder.timeLeft}).`)
     } else return next(new Error('I was unsuccessful in creating your reminder. Sorry. :c'))
   } else next(new Error('unacceptable reminder input.'))
 })

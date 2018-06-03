@@ -14,7 +14,7 @@ router.use('*', async (route, msg, next) => {
 router.use('', (route, msg, next) => msg.channel.send(route.insertBlock(msg.niddabot.guild.toString())))
 router.use(/\d+/, (route, msg, next) => {
   const answer = msg.niddabot.guild.members.get(route.currentRoute)
-  if (answer) msg.channel.send(route.insertBlock(answer.toShortString()))
+  if (answer) msg.channel.send(route.insertBlock(route.hasArgument('debug') && msg.niddabot.user.canPerform(999) ? answer.toString() : answer.toShortString()))
   else msg.reply(`no user with the Id ${route.currentRoute} was found in this guild.`)
 })
 router.use('me', (route, msg, next) => {
@@ -22,8 +22,18 @@ router.use('me', (route, msg, next) => {
   if (answer) msg.channel.send(route.insertBlock(answer.toShortString()))
   else msg.reply(`you don't seem to exist in this guild. How peculiar.`)
 })
+router.use('emoji', (route, msg, next) => {
+  const emoji = msg.niddabot.guild.emojis.get(route.parts[0])
+  if (emoji) {
+    msg.channel.send(emoji.toString())
+  } else msg.reply('no such emoji exists.')
+})
+router.use('emojis', (route, msg, next) => {
+  const answer = msg.niddabot.guild.emojis.values().map(a => a.toInfoString(route.hasArgument('debug') && msg.niddabot.user.canPerform(999))).join('\n')
+  return answer ? msg.channel.send(route.insertBlock(answer)) : msg.reply('no emojis were found in this guild.')
+})
 router.use('roles', (route, msg, next) => {
-  const answer = msg.niddabot.guild.roles.values().map(a => a.toString(route.getArgument('debug') === true)).join('\n')
+  const answer = msg.niddabot.guild.roles.values().map(a => a.toString(route.hasArgument('debug') && msg.niddabot.user.canPerform(999))).join('\n')
   return answer ? msg.channel.send(route.insertBlock(answer)) : msg.reply('no roles were found in this guild.')
 })
 router.use('channels', (route, msg, next) => {

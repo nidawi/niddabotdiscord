@@ -24,6 +24,23 @@ class DiscordRole {
     this.guild = undefined
   }
 
+  /**
+   * Updates this role. Used by gateway events.
+   * @param {RoleData} role
+   * @memberof DiscordRole
+   */
+  _update (role) {
+    if (role) {
+      this.hoist = role.hoist
+      this.name = role.name
+      this.mentionable = role.mentionable
+      this.color = role.color
+      this.position = role.position
+      this.managed = role.managed
+      this.permissions = role.permissions
+    }
+  }
+
   _roleStatusList () {
     return [ `${this.hoist ? 'H' : ''}`, `${this.mentionable ? 'M' : ''}`, `${this.managed ? 'MA' : ''}`, `P-${this.position}` ]
       .filter(Boolean)

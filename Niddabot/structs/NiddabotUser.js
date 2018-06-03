@@ -3,6 +3,7 @@
 const DiscordUser = require('./DiscordUser')
 const niddabotAccount = require('./NiddabotAccount')
 const NiddabotReminder = require('./NiddabotReminder')
+const NiddabotTimer = require('./NiddabotTimer')
 const Collection = require('../components/Collection')
 /* eslint-enable no-unused-vars */
 
@@ -36,6 +37,8 @@ class NiddabotUser {
     this.status = user.status
     this.createdAt = user.createdAt
     this.updatedAt = user.updatedAt
+
+    this._document = undefined
     /**
      * @type {DiscordUser}
      */
@@ -76,9 +79,16 @@ class NiddabotUser {
     this.fullName = undefined
 
     /**
+     * This user's reminders.
      * @type {Map<string, NiddabotReminder>}
      */
     this.reminders = new Collection()
+
+    /**
+     * This user's timers.
+     * @type {NiddabotTimer[]}
+     */
+    this.timers = []
 
     Object.defineProperty(this, 'exists', {
       get: () => { return (this.discordId !== null && this.discordId !== undefined && this.discordUser !== null && this.discordUser !== undefined) }
@@ -107,6 +117,11 @@ class NiddabotUser {
     this._discordTools = require('../DiscordTools')
   }
 
+  /**
+   * Registers this user, if it exists, optionally giving it a specific rank.
+   * @param {string} [rank='User']
+   * @memberof NiddabotUser
+   */
   async register (rank = 'User') {
     if (!this.exists) throw new Error('this user does not exist.')
     else if (this.registered) throw new Error('this user is already registered.')
@@ -114,6 +129,7 @@ class NiddabotUser {
       const newUser = await this._userTools.addUser(this.discordUser.id, undefined, rank, undefined, true, true)
       this.id = newUser.id
       this.niddabotRank = newUser.niddabotRank
+      this._document = newUser._document
       return true
     }
   }
@@ -129,6 +145,7 @@ class NiddabotUser {
       this.niddabotAccount = undefined
       this.niddabotServers = []
       this.niddabotRank = undefined
+      this._document = undefined
       return true
     }
   }
@@ -141,14 +158,28 @@ class NiddabotUser {
     } else throw new Error('user is not registered. Nothing to save.')
   }
   /**
-   * Sets the rank of this user.
-   * @param {string} rank The name or Id of the Rank to assign the user.
+   * Sets the Niddabot rank of this user.
+   * @param {"Super User"|"Moderator"|"Admin"|"VIP"|"User"|"Server Admin"|"Server Owner"|"Server OP"} rank The name or Id of the Rank to assign the user.
    * @async
    */
-  async setRank (rank) {
+  async setRank (rank, bypass = false) {
+    if (!this.registered) throw new Error('this user is not registered and thus cannot be assigned a rank other than "User".')
     const rankObj = await this._rankTools.getRank(rank) || await this._rankTools.getRankById(rank)
-    if (rankObj) {
-    } else throw new Error('invalid rank.')
+    if (rankObj && this.niddabotRank) {
+      if (this.niddabotRank.id === rankObj.id) throw new Error(`this user already has the rank "${rankObj.name}".`)
+      if (!bypass && !this.hasValidToken && rankObj.requiresAuthenticated) throw new Error(`the requested rank, "${rank}", requires an authenticated user and this user is not authenticated.`)
+      if (!bypass && !this.discordUser.mfaEnabled && rankObj.requires2FA) throw new Error(`the requested rank, "${rank}", requires 2FA and this user does not have 2FA enabled.`)
+      if (rankObj.maxMembers && (await this._userTools.findUsersByRank(rankObj.name)).length >= rankObj.maxMembers) throw new Error(`the requested rank, "${rank}", is restricted and cannot be assigned to any other users.`)
+
+      this.niddabotRank = rankObj // assign new rank
+      console.log(`${this.fullName} is now rank ${rankObj.name}.`)
+      if (this._document) {
+        this._document.niddabotRank.rankId = rankObj.id
+        await this._document.save()
+        console.log(`${this.fullName} new rank has been saved.`)
+      }
+      return rankObj
+    } else throw new Error(`the requested rank, "${rank}", does not exist.`)
   }
 
   /**
@@ -238,12 +269,14 @@ class NiddabotUser {
   toString (debug = false) {
     if (!this.exists) return undefined
     return !debug ? `${this.discordUser.fullName}\n` +
+      `${this.discordUser.presence.toString()}\n` +
       `${this.registered ? `This user registered on ${this.createdAt.toLocaleDateString()}.` : `This user has not been registered.`}\n` +
       `This user has the rank ${this.getRank()}.\n` +
       `${this.registered ? this.getTokenString() : `This user does not have a valid Access Token on record.`}`
-      : `${this.discordUser.fullName} (${this.discordUser.id}) [${this.id}]\n` +
-        `This user's avatar is available at ${this.discordUser.avatar}.\n` +
-        `${this.registered ? `This user registered on ${this.createdAt.toLocaleDateString()}.` : `This user has not been registered.`}\n` +
+      : `${this.discordUser.fullName} (${this.discordUser.id}) [${this.id ? this.id : ''}]\n` +
+        `${this.discordUser.presence.toString()}\n` +
+        `${this.discordUser.avatar ? `This user's avatar is available at ${this.discordUser.avatar}` : 'This user does not have an avatar'}.\n` +
+        `${this.registered ? `This user registered on ${this.createdAt.toLocaleDateString()}.` : `This user has not been registered.`} (${this._document ? 'verified' : 'not verified'})\n` +
         `${this.niddabotAccount ? `This user has an associated Niddabot Account (${this.niddabotAccount.id}) [${this.niddabotAccount.createdAt.toLocaleDateString()}].` : 'This user does not have an associated Niddabot Account.'}\n` +
         `${this.niddabotAccount ? `This user has selected ${this.niddabotAccount.nationality} as their country of residence.` : 'This user has not provided a country of residence.'}\n` +
         `This user has the rank ${this.getRank()} [${this.getPrivilege()}].\n` +

@@ -54,6 +54,35 @@ router.use('date', (route, msg, next) => {
     msg.reply(date ? date.toLocaleString() : 'not a valid date.')
   }
 })
+router.use('time', (route, msg, next) => {
+  const timeInputs = [
+    '1',
+    '2:29:11',
+    '15:33:19',
+    '12:999:22',
+    '111:52:22',
+    '66:146:1',
+    '25',
+    '11:25',
+    '',
+    'awdawd'
+  ]
+
+  // No arg given, run all tests.
+  if (route.parts.length === 0) {
+    msg.channel.send(route.insertBlock(timeInputs.map(a => {
+      try {
+        return `${a} => ${helpers.parseTime(a).toString()}`
+      } catch (err) { return `${a} => "${err.message}"` }
+    }).join('\n')))
+  } else {
+    try {
+      msg.reply(`${route.parts[0]} => ${helpers.parseTime(route.parts[0]).toString()}`)
+    } catch (err) {
+      msg.reply('that is not a valid time: ' + err.message)
+    }
+  }
+})
 
 router.use('delay', async (route, msg, next) => {
   const amount = parseInt(route.parts[0])

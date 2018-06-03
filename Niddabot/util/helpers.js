@@ -7,6 +7,34 @@
 const secondsToMinutes = (seconds) => {
   return `${Math.floor(seconds / 60)} min, ${Math.floor(seconds % 60)} seconds`
 }
+
+/**
+ * Converts a time difference in ms to a string showing the difference in hours, minutes, and seconds.
+ * @param {number} ms 
+ */
+const timeToString = ms => {
+  const total = ms / 1000
+
+  const hours = Math.floor(total / 3600)
+  const minutes = Math.floor((total % 3600) / 60)
+  const seconds = Math.floor(total % 3600 % 60)
+  
+  const results = [
+    { value: hours, type: `${hours === 1 ? 'hour' : 'hours'}` },
+    { value: minutes, type: `${minutes === 1 ? 'minute' : 'minutes'}` },
+    { value: seconds, type: `${seconds === 1 ? 'second' : 'seconds'}` }
+  ]
+  
+  return results.filter(a => a.value !== 0).map(a => `${a.value} ${a.type}`).join(', ')
+}
+
+/**
+ * Validates a number. Returns true if valid.
+ * @param {string|number} value 
+ * @param {string} name 
+ * @param {number} min 
+ * @param {number} max 
+ */
 const _validateNumber = (value, name = 'value', min = 0, max = 500) => {
   const number = parseFloat(value)
   if (!number || isNaN(number)) throw new Error(`invalid value type for ${name}.`)
@@ -21,9 +49,23 @@ const _validateNumber = (value, name = 'value', min = 0, max = 500) => {
     else return true
   } else return true
 }
+
+/**
+ * Validates a number. Returns the value if valid.
+ * @param {string|number} value 
+ * @param {string} name 
+ * @param {number} min 
+ * @param {number} max 
+ */
 const validateNumber = (value, name = 'value', min = 0, max = 500) => {
   if (_validateNumber(value, name, min, max)) return parseFloat(value)
 }
+
+/**
+ * Validates a string-based boolean value. Returns true if valid.
+ * @param {string} value
+ * @param {string} name
+ */
 const _validateBoolean = (value, name = 'string') => {
   if (typeof value === 'boolean') return true
   switch (value) {
@@ -32,6 +74,11 @@ const _validateBoolean = (value, name = 'string') => {
     default: throw new Error(`invalid value for ${name}. The value has to either true or false.`)
   }
 }
+
+/**
+ * Converts a string-based boolean value to a boolean value.
+ * @param {string} value
+ */
 const _convertBoolean = value => {
   if (typeof value === 'boolean') return value
   switch (value) {
@@ -41,6 +88,10 @@ const _convertBoolean = value => {
   }
 }
 
+/**
+ * Returns a promise that resolves after the given delay.
+ * @param {number} delay
+ */
 const wait = (delay = 500) => {
   return new Promise((resolve, reject) => {
     setTimeout(() => { resolve() }, delay)
@@ -71,6 +122,10 @@ const getType = type => {
   return Object.prototype.toString.call(type).replace(/[[\s\]]|object/gi, '').toLowerCase()
 }
 
+/**
+ * Converts text to number.
+ * @param {string} text 
+ */
 const parseNumber = text => {
   // In formal English, you don't type out numbers above 11. So we're going with that.
   switch (text) {
@@ -88,6 +143,58 @@ const parseNumber = text => {
     default: return parseInt(text)
   }
 }
+
+/**
+ * Returns the number with a zero in front if it is a single-digit number. Usable for time representations.
+ * @param {number|string} num
+ * @returns {string} the number prepended with a zero, or the number.
+ */
+const prependZero = num => {
+  if (!num) return num
+  else if (num.toString().length === 1) return `0${num}`
+  else return num
+}
+
+/**
+ * Parses a string and return the time that it represents.
+ * String format should he HH:MM:ss.
+ * @param {string} text string to parse.
+ * @returns {{ hours: number, minutes: number, seconds: number, date: Date, toString() => string}} an object containing hours, minutes, and seconds. 
+ */
+const parseTime = text => {
+  try {
+    const timeNumbers = text.split(/(?<=\d{1,2}[:.])/)
+    .map(a => parseInt(a.replace(/[:.]/g, '')))
+    .map(a => isNaN(a) ? undefined : a)
+
+    const timeObject = {
+      hours: timeNumbers[0],
+      minutes: timeNumbers[1],
+      seconds: timeNumbers[2],
+      date: new Date(),
+      toString() {
+        return `${prependZero(this.hours) || '00'}:${prependZero(this.minutes) || '00'}:${prependZero(this.seconds) || '00'}`
+      }
+    }
+
+    if (timeObject.hours == undefined || timeObject.hours < 0 || timeObject.hours > 23) throw new RangeError('hours have to be between 0 and 24.')
+    if (Object.values(timeObject).slice(1, 3).some(a => a < 0 || a > 59)) throw new RangeError('minutes and seconds have to be between 0 and 59.')
+
+    timeObject.date.setHours(timeObject.date.getHours() + timeObject.hours || 0)
+    timeObject.date.setMinutes(timeObject.date.getMinutes() + timeObject.minutes || 0)
+    timeObject.date.setSeconds(timeObject.date.getSeconds() + timeObject.seconds || 0)
+
+    return timeObject
+  } catch (err) {
+    if (err instanceof RangeError) throw err
+    else return undefined
+  }
+}
+
+/**
+ * Parses the time of the given string. This is different from parseTime() because it accounts for 12 & 24 hour time inputs.
+ * @param {string} text 
+ */
 const parseHour = text => {
   const number = text.match(/\d{1,2}(.\d{1,2})?/)[0].split(/\.|\,/).map(a => parseInt(a))
   if (number.length < 1) return undefined
@@ -173,6 +280,12 @@ const getTimeDifference = (date, format = 'days') => {
   }
 }
 
+/**
+ * Returns a matching number or the default value. Essentially a wrapper for indexOf that returns the default (given) value instead of -1 if nothing was found.
+ * @param {number} def 
+ * @param {(num:number) => boolean} filter 
+ * @param {number[]} args 
+ */
 const getMatchingOrDefault = (def, filter, ...args) => {
   const results = args.filter(a => filter(a))
   return results.length > 0 ? results.sort((a, b) => a - b)[0] : def
@@ -180,6 +293,7 @@ const getMatchingOrDefault = (def, filter, ...args) => {
 
 module.exports = {
   secondsToMinutes: secondsToMinutes,
+  timeToString: timeToString,
   validateNumber: validateNumber,
   _validateNumber: _validateNumber,
   _validateBoolean: _validateBoolean,
@@ -188,6 +302,7 @@ module.exports = {
   getType: getType,
   errorDevourer: errorDevourer,
   parseDate: parseDate,
+  parseTime: parseTime,
   getTimeDifference: getTimeDifference,
   getMatchingOrDefault: getMatchingOrDefault
 }

@@ -1,5 +1,6 @@
 // Niddabot Music Playing Module (supposedly)
 const Router = require('../../../components/Router')
+const Discord = require('discord.js')
 
 const helpers = require('./helpers')
 const NiddabotMusic = require('./NiddabotMusic')
@@ -108,15 +109,31 @@ router.use('leave', async (route, msg, next) => {
 router.use('info', async (route, msg, next) => {
   // Provides Youtube info about the specified link.
   try {
-    return msg.channel.send(route.insertBlock(await helpers.getVideoInfo(route.urls[0] || route.parts[0] || route.getArgument('song'), true)))
+    const song = await helpers.getVideoData(route.urls[0] || route.parts[0] || route.getArgument('song'))
+    if (song) {
+      const embed = route.getDefaultRichEmbed()
+        .setTitle(song.title)
+        .setDescription(song.description.length > 200 ? song.description.substring(0, 197) + '...' : song.description)
+        .setURL(song.video_url)
+        .setImage(song.thumbnail_url)
+        .addField('Details', [
+          `Length: ${helpers.secondsToMinutes(song.length_seconds)}.`,
+          `Uploaded by ${song.author.name} on ${new Date(song.published).toLocaleDateString()}.`,
+          `Views: ${song.view_count}.`
+        ].join('\n'))
+
+      return msg.channel.send({embed})
+      // return msg.channel.send(route.insertBlock(await helpers.getVideoInfo(route.urls[0] || route.parts[0] || route.getArgument('song'), true)))
+    }
   } catch (err) {
-    msg.reply('you did not provide a valid song link.')
+    return msg.reply('you did not provide a valid song link.')
   }
 })
 router.use('current', (route, msg, next) => {
   // Provides information about the currently playing song.
   if (msg.session.niddabotMusic && msg.session.niddabotMusic.isPlaying) {
-    msg.reply(`I am currently playing ${msg.session.niddabotMusic.toString(true)}`)
+    const embed = msg.session.niddabotMusic.toEmbed(route.getDefaultRichEmbed())
+    msg.channel.send({ embed })
     if (route.hasArgument('volume')) msg.reply(`the current volume is ${msg.session.niddabotMusic.volume}.`)
     if (route.hasArgument('start')) msg.reply(`the current song started at ${helpers.secondsToMinutes(msg.session.niddabotMusic.currentSettings.start)}.`)
     if (route.hasArgument('time')) msg.reply(`the current song has been playing for ${msg.session.niddabotMusic.time} out of ${msg.session.niddabotMusic.length}.`)

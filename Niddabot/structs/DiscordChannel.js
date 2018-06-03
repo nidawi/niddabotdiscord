@@ -20,11 +20,8 @@ class DiscordChannel {
     this.parentId = channel.parent_id // This always refers to a section, we don't care about those. Maybe later, but not currently.
     this.nsfw = channel.nsfw
     this.position = channel.position
-    /**
-     * The type of channel.
-     * @type {"text"|"private"|"voice"|"group"|"category"}
-     */
-    this.type = DiscordChannel.convertChannelType(channel.type)
+    this._type = channel.type
+    this.lastMessageId = channel.last_message_id
     this.id = channel.id
     this.bitrate = channel.bitrate
     this.userLimit = channel.user_limit
@@ -60,6 +57,25 @@ class DiscordChannel {
   get DMUser () { return this.recipients[0] }
 
   /**
+   * Returns true if this channel is in a guild.
+   * @readonly
+   * @memberof DiscordChannel
+   */
+  get isGuildChannel () {
+    return this.guildId && ['text', 'voice'].indexOf(this.type) !== -1
+  }
+
+  /**
+   * The type of channel.
+   * @type {"text"|"private"|"voice"|"group"|"category"}
+   * @readonly
+   * @memberof DiscordChannel
+   */
+  get type () {
+    return DiscordChannel.convertChannelType(this._type)
+  }
+
+  /**
    * Converts a type number to a type string and vice versa.
    * @static
    * @param {0|1|2|3|4|'text'|'private'|'voice'|'group'|'category'} type
@@ -87,7 +103,35 @@ class DiscordChannel {
     }
   }
 
-  _update () {}
+  /**
+   * Updates this channel. This is used by gateway events.
+   * @param {ChannelUpdateObject} channel
+   * @memberof DiscordChannel
+   */
+  _update (channel) {
+    // Update channel with the channel object we got from Discord.
+    // We are ignoring Id and guildId as those cannot change.
+    if (channel) {
+      this.name = channel.name
+      this.topic = channel.topic
+      this.lastMessageId = channel.last_message_id
+      this.parentId = channel.parent_id
+      this.nsfw = channel.nsfw
+      this.position = channel.position
+      this._type = channel.type
+      this.bitrate = channel.bitrate
+      this.userLimit = channel.user_limit
+      this.permissionOverwrites = channel.permission_overwrites
+    }
+  }
+
+  /**
+   * Fetches the latest message in this channel.
+   * @memberof DiscordChannel
+   */
+  async getLastMessage () {
+    return this.messages.get(this.lastMessageId) || this.getMessage(this.lastMessageId)
+  }
 
   /**
    * Registers a pre-loaded message into this channel. This is intended to be used in conjunction with DiscordJs.
@@ -251,11 +295,11 @@ class DiscordChannel {
   async fetchWebhooks () {
     const hooks = await this._tools.requestWebhooks(this.id)
     if (hooks) {
-      this.webhooks = new Collection(hooks.map(a => Object.assign(a, {
+      this.webhooks = new Collection(hooks.map(a => [a, Object.assign(a, {
         user: new DiscordUser(a.user),
         channel: this,
         guild: this.guild
-      })))
+      })]))
       return this.webhooks
     }
   }
@@ -293,6 +337,10 @@ class DiscordChannel {
       default: return 'no data available.'
     }
   }
+  /**
+   * Returns a short string representation of this Channel.
+   * @memberof DiscordChannel
+   */
   toShortString () {
     return `#${this.position}. ${this.name} (${this.id}) [${this.type}]`
   }
@@ -307,6 +355,7 @@ module.exports = DiscordChannel
  * @property {string} name
  * @property {string} topic
  * @property {string} parent_id
+ * @property {string} last_message_id
  * @property {boolean} nsfw
  * @property {number} position
  * @property {number} type
@@ -411,4 +460,21 @@ module.exports = DiscordChannel
  * @property {DiscordChannel} _channel
  * @property {UserData[]} mentions
  * @property {number} type
+ */
+
+/**
+ * @typedef ChannelUpdateObject
+ * @type {object}
+ * @property {number} bitrate
+ * @property {string} guild_id
+ * @property {string} id
+ * @property {string} last_message_id
+ * @property {string} name
+ * @property {boolean} nsfw
+ * @property {string} parent_id
+ * @property {string[]} permission_overwrites
+ * @property {number} position
+ * @property {string} topic
+ * @property {number} type
+ * @property {number} user_limit
  */

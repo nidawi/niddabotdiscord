@@ -14,11 +14,15 @@ class DiscordMember {
    * @memberof DiscordMember
    */
   constructor (member) {
-    this.nick = (member.nick) ? member.nick : undefined
-    this.user = member.user
+    this.nick = member.nick
     this.mute = member.mute
     this.deaf = member.deaf
     this.joinedAt = (member.joined_at) ? new Date(member.joined_at) : undefined
+
+    /**
+     * @type {DiscordUser}
+     */
+    this.user = member.user
 
     /**
      * This is a collection.
@@ -30,15 +34,26 @@ class DiscordMember {
      * @type {DiscordGuild}
      */
     this.guild = member.guild
+  }
 
-    /**
-     * @type {string}
-     */
-    this.username = undefined
+  /**
+   * Gets this member's username or nick, if there is a nick.
+   * @readonly
+   * @memberof DiscordMember
+   */
+  get username () { return this.nick || this.user.username }
 
-    Object.defineProperty(this, 'username', {
-      get: () => this.nick ? this.nick : this.user.username
-    })
+  /**
+   * Updates this member object. Used by gateway events.
+   * @param {MemberData} member
+   * @memberof DiscordMember
+   */
+  _update (member) {
+    if (member) {
+      if (member.nick !== undefined) this.nick = member.nick
+      if (member.user) this.user._update(member.user)
+      if (member.roles !== undefined) this.roles = new Collection(member.roles.map(a => [a, this.guild.roles.get(a)]))
+    }
   }
 
   /**
@@ -84,9 +99,17 @@ class DiscordMember {
     else return helpers.checkFlag(this.totalPermissions, permission)
   }
 
+  /**
+   * Returns a short string representation of this member.
+   * @memberof DiscordMember
+   */
   toShortString () {
     return `${this.username}#${this.user.discriminator} (${this.user.id}) [${this.isAdministrator ? 'Admin' : 'User'}] since ${this.joinedAt.toLocaleDateString()} (${this.age} ${this.age === 1 ? 'day' : 'days'})`
   }
+  /**
+   * Returns a string representation of this member.
+   * @memberof DiscordMember
+   */
   toString () {
     return `\n` +
     `Guild Member: ${this.username}.\n` +

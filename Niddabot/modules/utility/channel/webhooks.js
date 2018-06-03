@@ -9,10 +9,13 @@ router.use('*', (route, msg, next) => {
   if (!msg.niddabot.user.canPerform(200)) return next(new Error('access denied.'))
   else next()
 })
-router.use('', (route, msg, next) => {
+router.use('', async (route, msg, next) => {
   // List details about all webhooks
-  const answer = msg.niddabot.channel.webhooks.values().map(a => a.toString(route.getArgument('debug') === true)).join('\n')
-  return answer ? msg.channel.send(route.insertBlock(answer)) : msg.reply('this channel has no active Webhooks.')
+  const hooks = await msg.niddabot.channel.fetchWebhooks()
+  if (hooks) {
+    const answer = hooks.values().map(a => a.toString(route.getArgument('debug') === true)).join('\n')
+    return answer ? msg.channel.send(route.insertBlock(answer)) : msg.reply('this channel has no active Webhooks.')
+  } else return msg.reply('this channel has no active Webhooks.')
 })
 
 module.exports = router

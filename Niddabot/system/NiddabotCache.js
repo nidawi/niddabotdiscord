@@ -41,10 +41,18 @@ class NiddabotCache {
    * @memberof NiddabotCache
    */
   async _getServer (id) {
+    if (this._cache.has(`server:${id}`)) return this._cache.get(`server:${id}`)
     const server = await servers.getNiddabotServer(undefined, id)
-    if (server) {
+    if (server && !this._cache.has(`server:${id}`)) {
       console.log(`[Niddabot Cache] Saved a new server with Id ${id} [${server.guild.name}].`)
       this._cache.set(`server:${id}`, server)
+
+      // We will also try to cache all members.
+      if (server && server.guild) {
+        await Promise.all(server.guild.members.values().map(m => this._getUser(m.user.id, m.user)))
+        server.guild.members.forEach(a => { a.user = this._cache.get(`user:${a.user.id}`).discordUser })
+      }
+
       return server
     }
   }
@@ -53,10 +61,11 @@ class NiddabotCache {
    * @returns {NiddabotUser}
    * @memberof NiddabotCache
    */
-  async _getUser (id) {
-    const user = await users.getNiddabotUser(undefined, id)
+  async _getUser (id, userOverride = undefined) {
+    if (this._cache.has(`user:${id}`)) return this._cache.get(`user:${id}`)
+    const user = await users.getNiddabotUser(undefined, id, false, { discordUser: userOverride })
 
-    if (user.exists) {
+    if (user && user.exists && !this._cache.has(`user:${id}`)) {
       console.log(`[Niddabot Cache] Saved a new user with Id ${id} [${user.discordUser.fullName}].`)
       this._cache.set(`user:${id}`, user)
       return user

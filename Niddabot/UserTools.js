@@ -97,9 +97,16 @@ const findUser = async (discordId, transform = true) => {
 const findUserByRank = async (rankName, transform = true) => {
   if (!rankName) return undefined
   const rank = await ranks.getRank(rankName)
-  const user = await User.findOne({ niddabotRank: { rankId: sanitize(rank.id) } })
+  const user = await User.findOne({ 'niddabotRank.rankId': rank.id })
   if (!user) return undefined
   return (transform) ? transformUser(user) : user
+}
+const findUsersByRank = async (rankName, transform = true) => {
+  if (!rankName) return undefined
+  const rank = await ranks.getRank(rankName)
+  const users = await User.find({ 'niddabotRank.rankId': rank.id })
+  if (!users) return undefined
+  return (transform) ? users.map(a => transformUser(a)) : users
 }
 
 /**
@@ -118,22 +125,28 @@ const getUser = async (id, transform = true) => {
 /**
  * @param {string} id
  * @param {string} discordId
+ * @param {{ discordUser: *, niddabotAccount: * }} overrides
  * @returns {NiddabotUser}
  */
-const getNiddabotUser = async (id, discordId, jsonFriendly = false) => {
+const getNiddabotUser = async (id, discordId, jsonFriendly = false, overrides = {}) => {
   const user = ((discordId) ? await findUser(discordId) : await getUser(id)) || { discordId: discordId }
 
   const createdUser = new NiddabotUser(user)
+  if (user._document && !jsonFriendly) createdUser._document = user._document
   // Load Discord Info
-  createdUser.discordUser = (createdUser.hasValidToken) ? (await discord.requestUser(createdUser.tokenData.accessToken, undefined) || await discord.requestUser(undefined, user.discordId)) : await discord.requestUser(undefined, user.discordId)
+  if (overrides.discordUser) createdUser.discordUser = overrides.discordUser
+  else createdUser.discordUser = (createdUser.hasValidToken) ? (await discord.requestUser(createdUser.tokenData.accessToken, undefined) || await discord.requestUser(undefined, user.discordId)) : await discord.requestUser(undefined, user.discordId)
   // Transform and Load Niddabot Rank
   createdUser.niddabotRank = (user.niddabotRank) ? await ranks.getRankById(user.niddabotRank.rankId) : undefined
   // Load reminders, if any
-  if (!jsonFriendly) createdUser.reminders = new Collection((await NiddabotReminder.find(user.discordId)).map(a => [a.id, Object.assign(a, { _user: createdUser })]))
+  if (!jsonFriendly && createdUser.discordUser) createdUser.reminders = new Collection((await NiddabotReminder.find(user.discordId)).map(a => [a.id, Object.assign(a, { _user: createdUser })]))
 
-  if (createdUser.niddabotAccount) {
-    const accounts = require('./AccountTools')
-    createdUser.niddabotAccount = await accounts.getNiddabotAccount(createdUser.niddabotAccount, false, createdUser)
+  if (createdUser.niddabotAccount && !jsonFriendly) {
+    if (overrides.niddabotAccount) createdUser.niddabotAccount = overrides.niddabotAccount
+    else {
+      const accounts = require('./AccountTools')
+      createdUser.niddabotAccount = await accounts.getNiddabotAccount(createdUser.niddabotAccount, false, createdUser)
+    }
   }
 
   return createdUser
@@ -150,21 +163,6 @@ const createUser = data => {
         else resolve(transformUser(usr))
       })
     } catch (err) { reject(err) }
-  })
-}
-
-const fetchUserInfo = async accessToken => {
-  // First, try to fetch it using the provided token.
-
-  // If that does not work, fetch it using the default Bot token.
-}
-
-const updateUser = (id, newData) => {
-  return new Promise(async (resolve, reject) => {
-    User.findByIdAndUpdate(id, newData, (err, res) => {
-      if (err) reject(err)
-      return transformUser(res)
-    })
   })
 }
 
@@ -198,6 +196,7 @@ const updateUser = (id, newData) => {
 /**
  * @typedef UserData
  * @type {Object}
+ * @property {*} _document
  * @property {string} id The Id of this Niddabot User.
  * @property {string} discordId The Id of the associated Discord User.
  * @property {TokenData} [tokenData] The data of the associated Discord Access Token.
@@ -219,6 +218,7 @@ const updateUser = (id, newData) => {
   */
 const transformUser = user => {
   return {
+    _document: user,
     id: user._id,
     discordId: user.discordId,
     tokenData: user.tokenData,
@@ -259,5 +259,6 @@ module.exports = {
   getUser: getUser,
   findUser: findUser,
   findUserByRank: findUserByRank,
+  findUsersByRank: findUsersByRank,
   getNiddabotUser: getNiddabotUser
 }

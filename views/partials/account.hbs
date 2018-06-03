@@ -3,11 +3,11 @@
     <!-- We prioritize actual Discord Info here, over Niddabot Account Info. -->
     {{#if discord.discordUser}}
       <p>{{discord.discordUser.discordUser.username}}</p>
-      {{#if discord.discordUser.avatar}}
+      {{#some discord.discordUser.avatar '!=' 'undefined'}}
         <img src="{{discord.discordUser.avatar}}">
       {{else}}
         <img src="/img/niddabot.png">
-      {{/if}}
+      {{/some}}
     {{else}}
       <p>{{discord.name}}</p>
       <img src="/img/niddabot.png">

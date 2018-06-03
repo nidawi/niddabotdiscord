@@ -20,6 +20,6 @@ router.use('stats', async (route, msg, next) => {
 router.use('webhooks', require('./webhooks')) // Channel webhook management
 router.use('purge', require('./purge')) // Channel message purge
 
-// NUKE feature (delete channel and recreate with same settings?)
+// NUKE feature (delete channel and recreate with same settings?) POSTPONED
 
 module.exports = router

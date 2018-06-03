@@ -27,6 +27,15 @@ const getVideoInfo = async (data, long = false) => {
   return getVideoInfoSync(song, long)
 }
 /**
+ * Fetches info about a video.
+ * @param {string} data Link to the song.
+ */
+const getVideoData = async data => {
+  if (!data) return undefined
+  const song = await ytdl.getInfo(data)
+  return song
+}
+/**
  * Validates a volume. Throws errors if invalid. Returns true if valid.
  * @param {number|string} value
  * @returns {boolean}
@@ -42,6 +51,7 @@ module.exports = {
   secondsToMinutes: helpers.secondsToMinutes,
   getVideoInfoSync: getVideoInfoSync,
   getVideoInfo: getVideoInfo,
+  getVideoData: getVideoData,
   _validateVolume: _validateVolume,
   _validateNumber: helpers._validateNumber,
   _validateBoolean: helpers._validateBoolean,

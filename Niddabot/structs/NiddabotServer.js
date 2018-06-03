@@ -30,8 +30,10 @@ const DiscordGuild = require('./DiscordGuild') // eslint-disable-line
 
 const guildWelcomeMessages = [
   'Welcome, <$memberName>!',
-  '@<@<$memberId>>, welcome to <$guildName>!',
-  '@<@<$memberId>>, I cannot speak for anyone else... but I am excited about your arrival.'
+  '<@<$memberId>>, welcome to <$guildName>!',
+  '<@<$memberId>>, I cannot speak for anyone else... but I am excited about your arrival.',
+  '*rolls out the red carpet for <@<$memberId>>*',
+  'Good to see you, <$memberName>!'
 ]
 
 class NiddabotServer {
@@ -62,8 +64,17 @@ class NiddabotServer {
     return this.id !== undefined
   }
 
-  randomizeGreeting (username) {
-    return guildWelcomeMessages[Math.floor(Math.random() * guildWelcomeMessages.length)]
+  /**
+   * Randomizes a greeting for a user joining the server.
+   * @param {*} user
+   * @memberof NiddabotServer
+   */
+  randomizeGreeting (user) {
+    const message = guildWelcomeMessages[Math.floor(Math.random() * guildWelcomeMessages.length)]
+    return message
+      .replace(/<\$memberName>/g, user.username)
+      .replace(/<\$memberId>/g, user.id)
+      .replace(/<\$guildName>/g, this.guild.name)
   }
 
   toString (debug) {

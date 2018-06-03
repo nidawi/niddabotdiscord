@@ -1,5 +1,6 @@
 /* eslint-disable no-unused-vars */
 const NiddabotUser = require('../../../structs/NiddabotUser')
+const ytdl = require('ytdl-core')
 /* eslint-enable no-unused-vars */
 
 const helpers = require('./helpers')

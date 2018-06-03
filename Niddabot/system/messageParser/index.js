@@ -1,4 +1,5 @@
 // Parses a message, accounting for modifiers etc.
+const Discordjs = require('discord.js')
 
 const emojiRegex = /.*<a?:\S+:\d+>.*/i // Matches Discord Emojis: <a?:EMOJI_NAME:EMOJI_ID>
 const emojiCleanRegex = /(.*<a?:)|(>.*)/gi
@@ -60,7 +61,7 @@ const isURL = text => {
   return new RegExp(
     '^localhost:\\d{2,5}|' + // Local host
     '^\\d{3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d|' + // Ipv4
-    '^((\\w|-)+\\.|(https?:\\/{2}))(\\w+)\\..+' // Normal domain
+    '^((\\w|-)+\\.|(https?:\\/{2}))(\\w+)\\.[a-zA-Z]+.*' // Normal domain
   ).test(text)
 }
 
@@ -121,6 +122,13 @@ module.exports = msg => {
     insertBlock (text) {
       return `\`\`\`${text}\`\`\``
     },
+    getDefaultRichEmbed () {
+      return new Discordjs.RichEmbed()
+        .setColor(msg.self.colour)
+        .setAuthor(msg.self.user.toAuthor().name, msg.self.user.toAuthor().icon_url)
+        .setFooter(msg.self.getFooter().text, msg.self.getFooter().icon_url)
+        .setTimestamp()
+    },
     toString () {
       return `` +
       `Arguments:[${this.args.size}]\n${Array.from(this.args.entries()).map(a => `${a[0]}: ${JSON.stringify(a[1])} (${Array.isArray(a[1]) ? 'array' : typeof a[1]})`).join('\n')}\n` +
@@ -128,6 +136,7 @@ module.exports = msg => {
       `Message: ${this.message}\n` +
       `Parts (clean): ${JSON.stringify(this.parts)}\n` +
       `Parts: ${JSON.stringify(parts)}\n` +
+      `URLs: ${this.urls.join(', ')}\n` +
       `Textual: ${this.getText()}\n` +
       `Type: ${this.type}\n` +
       `Mentions: ${this.mentions}\n` +
@@ -136,5 +145,3 @@ module.exports = msg => {
     }
   }
 }
-
-// (this.arguments.filter(a => { return (a.key === arg) }).length > 0)

@@ -3,7 +3,7 @@
 
 ### Skip These ###
 _dev/
-docs/
+_documents/
 vars.js
 
 ### Node ###

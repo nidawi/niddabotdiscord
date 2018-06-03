@@ -99,6 +99,14 @@ class MessageContent {
 
     this.getText = (start = 0) => { return parts.slice(start).filter(a => !a.startsWith('--')).join(' ') }
   }
+  getDefaultRichEmbed () {
+    return new Discordjs.RichEmbed()
+      .setColor(msg.self.colour)
+      .setAuthor(msg.self.user.toAuthor().name, msg.self.user.toAuthor().icon_url)
+      .setFooter(msg.self.getFooter().text, msg.self.getFooter().icon_url)
+      .setTimestamp()
+  }
+
   hasArgument (arg) {
     return this.args.has(arg)
   }

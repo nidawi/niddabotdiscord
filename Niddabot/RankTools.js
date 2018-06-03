@@ -78,6 +78,7 @@ const getRanks = async (transform = true) => {
  */
 const getRank = async (name, transform = true) => {
   const rank = await Rank.findOne({ name: sanitize(name) })
+  if (!rank) return undefined
   return (transform) ? transformRank(rank) : rank
 }
 /**
@@ -86,8 +87,11 @@ const getRank = async (name, transform = true) => {
 * @returns {RankData}
  */
 const getRankById = async (id, transform = true) => {
-  const rank = await Rank.findById(sanitize(id))
-  return (transform) ? transformRank(rank) : rank
+  try {
+    const rank = await Rank.findById(sanitize(id))
+    if (!rank) return undefined
+    return (transform) ? transformRank(rank) : rank
+  } catch (err) { return undefined }
 }
 
 /**

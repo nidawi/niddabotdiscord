@@ -183,7 +183,7 @@ const getNiddabotAccount = async (id, jsonFriendly = false, userOverride = undef
 
   if (userOverride) account.discordUser = userOverride
   else {
-    const user = await users.getNiddabotUser(fetchedAccount.discordUser, undefined, jsonFriendly)
+    const user = await users.getNiddabotUser(fetchedAccount.discordUser, undefined, jsonFriendly, { niddabotAccount: account })
     account.discordUser = (user.exists) ? user : undefined
   }
 

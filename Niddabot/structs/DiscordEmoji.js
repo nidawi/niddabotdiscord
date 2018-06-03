@@ -58,6 +58,23 @@ class DiscordEmoji {
      */
     this.guild = emoji.guild
   }
+
+  /**
+   * Updates this emoji. Used by gateway events.
+   * @param {EmojiData} emoji
+   * @memberof DiscordEmoji
+   */
+  _update (emoji) {
+    if (emoji) {
+      this.managed = emoji.managed
+      this.name = emoji.name
+      this.roles = emoji.roles
+      this.user = emoji.user ? new DiscordUser(emoji.user) : undefined
+      this.require_colons = emoji.require_colons
+      this.animated = emoji.animated
+    }
+  }
+
   /**
    * Returns a string that can be used to send this Emote to Discord.
    * @example `<a?:name:id>`
@@ -66,6 +83,14 @@ class DiscordEmoji {
    */
   toString () {
     return `<${(this.animated) ? 'a' : ''}:${this.name}:${this.id}>`
+  }
+  /**
+   * Returns an info string of this emoji.
+   * @memberof DiscordEmoji
+   */
+  toInfoString (debug = false) {
+    return !debug ? `${this.name} (${this.id}) ${this.animated ? '[animated]' : ''}`
+      : `${this.name} (${this.id}) added in ${this.guild.name} (${this.guild.id}). ${this.animated ? '[animated]' : ''}`
   }
 }
 

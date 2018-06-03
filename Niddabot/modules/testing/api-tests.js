@@ -1,8 +1,6 @@
 // Niddabot runtime Testing: Discord api
 const Router = require('../../components/Router')
 const discord = require('../../DiscordTools')
-const helpers = require('../../util/helpers')
-
 const router = new Router()
 
 router.use('rates', (route, msg, next) => {

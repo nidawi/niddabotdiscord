@@ -1,7 +1,7 @@
 // Message Purge Module for Niddabot
 const Router = require('../../../components/Router')
 const helpers = require('../../../util/helpers')
-const DiscordGuild = require('../../../structs/DiscordGuild')
+// const DiscordGuild = require('../../../structs/DiscordGuild')
 
 const router = new Router()
 

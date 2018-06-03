@@ -8,7 +8,7 @@ const reminderSchema = new mongoose.Schema({
   expiration: { type: Date, required: [true, 'A reminder requires an expiration date.'] },
   enabled: { type: Boolean, required: true, default: true },
   body: String, // Optional reminder text
-  references: [ { refId: String, refType: { type: String, enum: { values: [ 'user', 'channel', 'message', 'guild' ], message: 'Invalid reminder reference type.' } } } ], // References for the reminder, such as a discord message, user, channel, etc.
+  references: [ { refId: String, refAid: String, refType: { type: String, enum: { values: [ 'user', 'channel', 'message', 'guild' ], message: 'Invalid reminder reference type.' } } } ], // References for the reminder, such as a discord message, user, channel, etc.
   createdAt: { type: Date, required: true, default: Date.now },
   updatedAt: { type: Date, required: true, default: Date.now }
 })

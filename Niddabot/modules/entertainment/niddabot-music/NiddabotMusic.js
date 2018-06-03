@@ -288,10 +288,35 @@ class NiddabotMusic {
    * @returns {string}
    */
   toString (detailed = false) {
-    return (detailed) ? `"${this.currentSong.songInfo.title}" by ${this.currentSong.songInfo.author.name}.\n` +
-    `Time: ${this.time} / ${this.length}.\n` +
-    `Requested by: ${this.currentSong.songRequester.discordUser.username}\n` +
-    `Link: ${this.currentSong.songInfo.video_url}.` : `"${this.currentSong.songInfo.title}" by ${this.currentSong.songInfo.author.name} (${this.length}).`
+    if (this.currentSong) {
+      return (detailed) ? `"${this.currentSong.songInfo.title}" by ${this.currentSong.songInfo.author.name}.\n` +
+      `Time: ${this.time} / ${this.length}.\n` +
+      `Requested by: ${this.currentSong.songRequester.discordUser.username}\n` +
+      `Link: ${this.currentSong.songInfo.video_url}.` : `"${this.currentSong.songInfo.title}" by ${this.currentSong.songInfo.author.name} (${this.length}).`
+    }
+  }
+  /**
+   * Returns a Discord Rich Embed with information about the current song.
+   * @param {Discordjs.RichEmbed} defaultEmbed
+   * @memberof NiddabotMusic
+   */
+  toEmbed (defaultEmbed) {
+    if (this.currentSong) {
+      return defaultEmbed
+        .setTitle(this.currentSong.songInfo.title)
+        .setDescription(this.currentSong.songInfo.description.length > 200 ? this.currentSong.songInfo.description.substring(0, 197) + '...' : this.currentSong.songInfo.description)
+        .setURL(this.currentSong.songInfo.video_url)
+        .setImage(this.currentSong.songInfo.thumbnail_url)
+        .addField('Details', [
+          `Length: ${helpers.secondsToMinutes(this.currentSong.songInfo.length_seconds)}.`,
+          `Uploaded by ${this.currentSong.songInfo.author.name} on ${new Date(this.currentSong.songInfo.published).toLocaleDateString()}.`,
+          `Views: ${this.currentSong.songInfo.view_count}.`
+        ].join('\n'))
+        .addField('Status', [
+          `Time: ${this.time} / ${this.length}.`,
+          `Requested by: ${this.currentSong.songRequester.fullName}`
+        ].join('\n'))
+    }
   }
 }
 

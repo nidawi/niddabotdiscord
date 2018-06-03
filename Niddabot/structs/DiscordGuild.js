@@ -34,6 +34,7 @@ class DiscordGuild {
     this.verificationLevel = guild.verification_level
     this.embedsEnabled = guild.embed_enabled
     this.id = guild.id
+    this.ownerId = guild.owner_id
 
     /**
      * This is a collection.
@@ -99,22 +100,81 @@ class DiscordGuild {
   get isHomeServer () { return this.id === process.env.NIDDABOT_HOME_ID }
 
   /**
-   * Adds a user to this guild.
-   * @param {string} userId The user's Discord Id.
+   * Updates this guild's emojis. Used by gateway events.
+   * @param {EmojiData[]} emojis
    * @memberof DiscordGuild
    */
-  async addMember (userId) {
-    if (!this.members.has(userId)) {
-      const member = await this._tools.requestMember(this.id, userId)
+  _updateEmojis (emojis) {
+    if (emojis && Array.isArray(emojis)) {
+      this.emojis.forEach((val, key, map) => {
+        const updEmoji = emojis.find(a => a.id === key)
+        if (!updEmoji) map.delete(key) // Delete emojis that have been deleted.
+        else val._update(updEmoji) // Otherwise, update the emoji.
+      })
+      emojis.filter(a => !this.emojis.has(a.id)).forEach(a => { this.emojis.set(a.id, Object.assign(new DiscordEmoji(a), { guild: this })) }) // Add emojis that have been added
+    }
+  }
+
+  /**
+   * Updates this guild object. Used by gateway events.
+   * @param {GuildData} guild
+   * @memberof DiscordGuild
+   */
+  _update (guild) {
+    // We need to deal with emojis and roles a bit differently.
+    this.roles.forEach((val, key, map) => { if (!guild.roles.find(a => a.id === key)) map.delete(key) }) // Delete roles that have been deleted.
+    guild.roles.filter(a => !this.roles.has(a.id)).forEach(a => { this.roles.set(a.id, Object.assign(new DiscordRole(a), { guild: this })) }) // Add roles that have been added
+
+    this._updateEmojis(guild.emojis)
+
+    this.mfaLevel = guild.mfa_level
+    this.appId = guild.application_id
+    this.name = guild.name
+    this.afkTimeout = guild.afk_timeout
+    this.systemChannel = guild.system_channel_id
+    this.widgetChannel = guild.widget_channel_id
+    this.afkChannel = guild.afk_channel_id
+    this.embedChannel = guild.embed_channel_id
+    this.region = guild.region
+    this.defaultMessageNotifications = guild.default_message_notifications
+    this.explicitContentFilter = guild.explicit_content_filter
+    this.splash = guild.splash
+    this.features = guild.features
+    this.widgetsEnabled = guild.widget_enabled
+    this.verificationLevel = guild.verification_level
+    this.embedsEnabled = guild.embed_enabled
+  }
+
+  /**
+   * Adds a user to this guild.
+   * @param {DiscordUser} user A DiscordUser object.
+   * @memberof DiscordGuild
+   */
+  async addMember (user) {
+    if (!this.members.has(user.id)) {
+      const member = await this._tools.requestMember(this.id, user.id)
       if (member) {
         member.guild = this
         member.roles = new Collection(member.roles.map(b => [b, this.roles.get(b)]))
-        member.user = Object.assign(new DiscordUser(member.user), { member: member })
+        member.user = Object.assign(user, { member: member })
         // Add
-        this.members.set(userId, member)
+        this.members.set(user.id, member)
         // return
         return member
       }
+    }
+  }
+  /**
+   * Adds a new role to this guild. If post is set to true, a request will be sent to Discord, notifying them of the new channel.
+   * @param {RoleData} role
+   * @param {boolean} [post]
+   * @memberof DiscordGuild
+   */
+  async createRole (role, post = false) {
+    if (!this.roles.has(role.id)) {
+      const newRole = new DiscordRole(role)
+      newRole.guild = this
+      this.roles.set(role.id, newRole)
     }
   }
 

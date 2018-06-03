@@ -10,7 +10,15 @@ const dataTransformation = require('./system/dataTransforms')
 
 const discordClient = new Discord.Client()
 
+/**
+ * Niddabot: Discord Core.
+ * @class Niddabot
+ */
 class Niddabot {
+  /**
+   * Creates an instance of Niddabot.
+   * @memberof Niddabot
+   */
   constructor () {
     const niddabotRouter = new Router() // Main router.
     const niddabotSession = new NiddabotSelf() // An object that deals with Niddabot self-data.
@@ -31,19 +39,23 @@ class Niddabot {
       { path: 'channel', module: require('./modules/utility/channel'), options: { type: 'any' } },
 
       // Utility
-      { path: 'math', module: require('./modules/utility/math') },
-      { path: 'reminder', module: require('./modules/utility/reminders') },
-      { path: 'time', module: require('./modules/utility/time') },
+      { path: 'math', module: require('./modules/utility/math'), options: { type: 'any' } },
+      { path: 'reminder', module: require('./modules/utility/reminders'), options: { type: 'any' } },
+      { path: 'time', module: require('./modules/utility/time'), options: { type: 'any' } },
+      { path: 'timer', module: require('./modules/utility/timer'), options: { type: 'any' } },
 
       // Entertainment
       { path: '*', module: require('./modules/chatting'), options: { trigger: 'neither', type: 'private' } },
       { path: '*', module: require('./modules/chatting'), options: { trigger: 'mentioned', type: 'guild' } },
       { path: 'music', module: require('./modules/entertainment/niddabot-music') },
-      { path: '8ball', module: require('./modules/entertainment/magic8ball') },
-      { path: 'roll', module: require('./modules/entertainment/dice') }
+      { path: '8ball', module: require('./modules/entertainment/magic8ball'), options: { type: 'any' } },
+      { path: 'roll', module: require('./modules/entertainment/dice'), options: { type: 'any' } }
     ]
     niddabotModules.forEach(a => { niddabotRouter.use(a.path, a.module, a.options) })
 
+    /**
+     * Connects Niddabot.
+     */
     this.connect = async () => {
       // Connect to the DB.
       require('../config/database').create().catch(err => {
@@ -82,8 +94,6 @@ class Niddabot {
       // Register Niddabot Discord Listeners.
       discordClient.on('ready', () => console.log(`Niddabot signed in as ${discordClient.user.tag} at ${niddabotSession.startedAt.toLocaleString()}.`))
       discordClient.on('disconnect', () => console.log(`Niddabot disconnected at ${new Date().toLocaleString()}.`))
-      discordClient.on('messageReactionAdd', (reaction, user) => { console.log(user.username, 'added', reaction.emoji.name) })
-      discordClient.on('messageReactionRemove', () => {})
 
       // Event that fires when a new member joins a guild.
       discordClient.on('guildMemberAdd', async member => {
@@ -92,19 +102,24 @@ class Niddabot {
           const server = await niddabotCache.getServer(member.guild.id)
           const guild = server.guild
           if (server && guild) {
-            const dMember = await guild.addMember(member.user.id) // Add the member to the guild.
-            if (dMember) {
-              console.log(dMember.user.fullName, 'has joined guild', guild.name)
+            const user = await niddabotCache.getUser(member.user.id) // Load the user that just joined (and cache them if they haven't been already)
+            const dMember = await guild.addMember(user.discordUser) // Add the member to the guild.
+            if (user && dMember) {
+              console.log(`${user.fullName} has joined ${guild.name}.`)
               // Welcome the user to the server, if they have a system channel.
               // Currently no settings for this, add later.
               const channel = member.guild.channels.get(guild.systemChannel)
-              if (channel) channel.send(`Welcome, ${member.user.username}, to ${guild.name}!`)
+              if (channel) channel.send(server.randomizeGreeting(user.discordUser))
 
               if (guild.isHomeServer) {
                 // If the guild is Niddabot's home server, niddabot account flags are taken into account (flags are used to assign Tester/Examiner ranks etc.).
-                const user = await niddabotCache.getUser(member.user.id)
-                if (user && user.niddabotAccount && user.niddabotAccount.flags.includes('examiner')) {
-                  // If the user is flagged as an examiner, we will assign them the Discord Rank Tester and the Niddabot Rank Admin.
+                if (user.niddabotAccount && user.niddabotAccount.flags.includes('examiner')) {
+                  // If the user is flagged as an examiner, we will assign them the Niddabot Rank Admin.
+                  await user.setRank('Admin', true)
+                  await user.discordUser.sendDM(`Hi there, ${user.discordUser.username}.\n` +
+                  `I can see here that your account has been flagged as an "examiner". I have therefore given you the rank Admin in ${guild.name} so that you can properly test my features. You can type !me in any channel to see your current status.\n` +
+                  `As an Admin you will have access to the majority of my available functionality, including the "test" and most of the "sudo" routes. You also have access to privileged arguments such as --debug, --time, --sudo, and --echo.\n` +
+                  `If there are any uncertainties, please refer to the demo video or contact genericwebdev#1813 for assistance.`)
                 }
               }
             } else console.log('member already exists or something went wrong along the way!')
@@ -147,28 +162,77 @@ class Niddabot {
             }
             break
           case 'CHANNEL_DELETE': // When a channel is deleted. Use this event to remove the channel from the cache.
-            console.log(`${server.guild.name} (${server.guild.id}) has deleted a channel with Id ${msg.id}.`)
-            server.guild.channels.delete(msg.id)
+            if (server) {
+              console.log(`${server.guild.name} (${server.guild.id}) has deleted a channel with Id ${msg.id}.`)
+              server.guild.channels.delete(msg.id)
+            }
             break
           case 'CHANNEL_UPDATE': // When a channel is updated. We use this event to update our stored channel with new data.
-            console.log(`${server.guild.name} (${server.guild.id}) has updated a channel with Id ${msg.id}.`)
-            console.log(msg)
+            if (server) {
+              const channel = server.guild.channels.get(msg.id)
+              if (channel) {
+                console.log(`${server.guild.name} (${server.guild.id}) has updated channel "${channel.name}" with Id ${channel.id}.`)
+                channel._update(msg)
+              }
+            }
             break
           case 'GUILD_UPDATE': // When a guild is updated.
-            console.log(`${server.guild.name} (${server.guild.id}) has been updated.`)
-            console.log(msg)
+            if (server && server.guild) {
+              console.log(`${server.guild.name} (${server.guild.id}) has been updated.`)
+              server.guild._update(msg)
+            }
+            break
+          case 'GUILD_EMOJIS_UPDATE': // When a guild has its emojis updated.
+            if (server && server.guild) {
+              console.log(`${server.guild.name} (${server.guild.id}) has had its emojis updated.`)
+              server.guild._updateEmojis(msg.emojis)
+            }
+            break
+          case 'GUILD_ROLE_CREATE': // A new role is created.
+            if (server && server.guild) {
+              console.log(`${server.guild.name} (${server.guild.id}) has created a new role.`)
+              server.guild.createRole(msg.role, false)
+            }
+            break
+          case 'GUILD_ROLE_UPDATE': // A role is updated.
+            if (server && server.guild) {
+              const role = server.guild.roles.get(msg.role.id)
+              if (role) {
+                console.log(`${server.guild.name} (${server.guild.id}) has updated a role.`)
+                role._update(msg.role)
+              }
+            }
+            break
+          case 'GUILD_ROLE_DELETE': // A role is deleted.
+            if (server && server.guild) {
+              if (server.guild.roles.has(msg.role_id)) {
+                console.log(`${server.guild.name} (${server.guild.id}) has deleted a role.`)
+                server.guild.roles.delete(msg.role_id)
+              }
+            }
             break
           case 'USER_UPDATE': // A user is updated.
             console.log(`A user (${msg.user.id}) has been updated.`)
             console.log(msg)
             break
           case 'GUILD_MEMBER_UPDATE': // A guild member is updated.
-            console.log(`A Guild Member of ${server.guild.name} (${server.guild.id}) has been updated.`)
-            console.log(msg)
+            if (server && server.guild) {
+              const member = server.guild.members.get(msg.user.id)
+              if (member) {
+                console.log(`Guild Member ${member.user.fullName} of ${server.guild.name} (${server.guild.id}) has been updated.`)
+                member._update(msg)
+              }
+            }
             break
           case 'PRESENCE_UPDATE': // A user updates its presence (name, avatar, etc.)
-            console.log(`A user (${msg.user.id}) has updated its presence.`)
-            console.log(msg)
+            const user = await niddabotCache.getUser(msg.user.id)
+            if (user) {
+              console.log(`${user.fullName} (${user.discordId}) has updated their presence.`)
+              user.discordUser._update(msg)
+              if (server && server.guild && server.guild.members.has(user.discordId)) {
+                server.guild.members.get(user.discordId)._update({ user: msg.user })
+              }
+            }
             break
         }
       })
@@ -215,10 +279,18 @@ class Niddabot {
       await discordClient.login(process.env.NIDDABOT_TOKEN)
       console.timeEnd('Niddabot boot sequence')
     }
+    /**
+     * Disconnects Niddabot.
+     * @param {boolean} exit
+     */
     this.disconnect = async (exit = true) => {
       await discordClient.destroy()
       if (exit) process.exit(1)
     }
+    /**
+     * Performs preprocessing.
+     * @param {Discord.Message} msg
+     */
     const preProcess = msg => {
       return new Promise(async (resolve, reject) => {
         // Pre-process means adding mostly statistical or mandatory transformations for the data to be properly processed by middleware.
@@ -247,13 +319,15 @@ class Niddabot {
         } catch (err) { reject(err) }
       })
     }
+    /**
+     * Performs postprocessing.
+     * @param {Discord.Message} msg
+     */
     const postProcess = async msg => {
       // Post-process means printing things that are usually defined by arguments or by logging events etc.
       msg.statistics.postProcessStartAt = new Date()
       if (msg.messageContent && msg.niddabot.user.canPerform(999)) {
         try {
-          // Things that are based on the module 'messageParser'
-          // IMPLEMENT MODERATOR CHECK.
           // If the user requests an echo.
           if (msg.messageContent.hasArgument('echo')) msg.channel.send(`\`\`\`ECHO =>\n${msg.messageContent.toString()}\`\`\``)
           // Time has to be last.

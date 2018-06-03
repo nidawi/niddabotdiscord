@@ -292,29 +292,6 @@ const requestUser = async (accessToken = undefined, discordId) => {
   const response = accessToken ? (await discordRequest('users/@me', requestOptions) || await discordRequest(`users/${discordId}`, requestOptions)) : await discordRequest(`users/${discordId}`, requestOptions)
   if (response && response.status === 200) {
     return new DiscordUser(response.data)
-    // return convertUserObject(response.data)
-  }
-}
-
-/**
- * @returns {UserData}
- */
-const convertUserObject = data => {
-  if (!data) return undefined
-  else {
-    return {
-      discordId: data.id,
-      id: data.id,
-      username: data.username,
-      discriminator: data.discriminator,
-      avatar: data.avatar,
-      bot: data.bot,
-      mfa_enabled: data.mfa_enabled,
-      email: {
-        verified: data.verified,
-        address: data.email
-      }
-    }
   }
 }
 
@@ -366,15 +343,6 @@ const requestSelf = async () => {
 }
 
 /**
- * @async
- * @param {UserData} user
- * @returns {*}
- */
-const requestUserAvatar = async user => {
-  const avatarUrl = `https://cdn.discordapp.com/avatars/${user.discordId}/${user.avatar}`
-}
-
-/**
  * Requests a list of Emojis from the specified Guild. You can, optionally, provide an emojiId and fetch only that specific emoji instead.
  * @async
  * @param {string} guildId Id of the Discord Guild.
@@ -383,7 +351,7 @@ const requestUserAvatar = async user => {
  */
 const requestEmoji = async (guildId, emojiId = undefined) => {
   if (!guildId) return undefined // We need a guild Id.
-  const response = await discordRequest(`guilds/${guildId}${(emojiId) ? `/${emojiId}` : ''}`)
+  const response = await discordRequest(`guilds/${guildId}/emojis${(emojiId) ? `/${emojiId}` : ''}`)
   if (response && response.status === 200) {
     if (Array.isArray(response.data)) return response.data.map(a => { return [a.id, new DiscordEmoji(Object.assign(a, { guildId: guildId }))] })
     else return new DiscordEmoji(Object.assign(response.data, { guildId: guildId }))
@@ -420,9 +388,7 @@ const requestGuild = async (guildId, jsonFriendly = false) => {
     guild.channels = new Collection((await requestChannels(guildId, jsonFriendly)).map(a => [a.id, Object.assign(a, {
       guild: !jsonFriendly ? guild : undefined
     })]))
-    guild.emojis = new Collection(response.data.emojis.map(a => [a.id, new DiscordEmoji(Object.assign(a, {
-      guild: !jsonFriendly ? guild : undefined
-    }))]))
+    guild.emojis = new Collection(response.data.emojis.map(a => [a.id, Object.assign(new DiscordEmoji(a), { guild: !jsonFriendly ? guild : undefined })]))
     guild.members = new Collection((await requestMembers(guildId)).map(a => [a.user.id, Object.assign(a, {
       guild: !jsonFriendly ? guild : undefined,
       roles: new Collection(a.roles.map(b => [b, guild.roles.get(b)])),
@@ -431,10 +397,6 @@ const requestGuild = async (guildId, jsonFriendly = false) => {
 
     return guild
   } else return undefined
-}
-
-const convertGuildObject = (data, jsonFriendly = false) => {
-
 }
 
 /**
@@ -463,7 +425,7 @@ const requestChannel = async (channelId, jsonFriendly = false) => {
   if (!channelId) return undefined
   const response = await discordRequest(`channels/${channelId}`)
   if (response && response.success) {
-    const channel = await convertChannelObject(request.data, jsonFriendly)
+    const channel = await convertChannelObject(response.data, jsonFriendly)
     return channel
   }
 }
@@ -551,14 +513,6 @@ const requestMessage = async (channelId, msgId) => {
     return new DiscordMessage(response.data)
   }
 }
-const editMessage = () => {
-  /*
-    PATCH/channels/{channel.id}/messages/{message.id}
-    Field	Type	Description
-    content	string	the new message contents (up to 2000 characters)
-    embed	embed object	embedded rich content
-  */
-}
 const deleteMessage = async (channelId, messageId) => {
   const requestOptions = {
     method: 'DELETE'
@@ -610,7 +564,6 @@ module.exports = {
   requestMembers: requestMembers,
   requestMember: requestMember,
   requestGuild: requestGuild,
-  convertGuildObject: convertGuildObject,
   requestChannels: requestChannels,
   requestChannel: requestChannel,
   convertChannelObject: convertChannelObject,

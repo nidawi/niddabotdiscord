@@ -1,5 +1,6 @@
 /* eslint-disable no-unused-vars */
 const NiddabotObject = require('./NiddabotObject')
+const Discord = require('discord.js')
 const Router = require('../components/Router')
 const DiscordGuild = require('./DiscordGuild')
 const DiscordUser = require('./DiscordUser')
@@ -64,6 +65,10 @@ class NiddabotSelf extends NiddabotObject {
     if (emote) return emote.toString()
     else return undefined
   }
+  /**
+   * Returns embed footer.
+   * @memberof NiddabotSelf
+   */
   getFooter () {
     return {
       icon_url: this.user.avatar,
@@ -83,6 +88,26 @@ class NiddabotSelf extends NiddabotObject {
     `My currently registered Home Server is ${this.home.name}.\n` +
     `My current memory stats are:\n${statistics.getMemoryUsage()}\n` +
     `My System Info is:\n${statistics.getSystemInfo()}`
+  }
+  /**
+   * Returns a RichEmbed representation of this object.
+   * @param {Discord.RichEmbed} defaultEmbed
+   * @memberof NiddabotSelf
+   */
+  toEmbed (defaultEmbed) {
+    return defaultEmbed
+      .setTitle('System Status')
+      .setDescription('Niddabot\'s current system status.')
+      .setThumbnail(this.user.avatar)
+      .addField('General', [
+        `Uptime: ${super.secondsToMinutes((new Date() - this.startedAt) / 1000)}`,
+        `Mode: ${this.devMode ? 'Development' : 'Production'}`,
+        `Creator, Developer, & Owner: ${this.application.owner.fullName}`,
+        `Me: ${this.user.fullName}`,
+        `Home Server: ${this.home.name}`
+      ].join('\n'))
+      .addField('Memory Stats', statistics.getMemoryUsage())
+      .addField('Host Details', statistics.getSystemInfo())
   }
 }
 
