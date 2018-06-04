@@ -1,1 +1,1 @@
-awd
+[Wiki](https://github.com/1dv430/ja222ts-project/wiki)
