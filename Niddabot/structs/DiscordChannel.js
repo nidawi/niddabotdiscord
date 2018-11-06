@@ -66,6 +66,15 @@ class DiscordChannel {
   }
 
   /**
+   * Returns true if this channel is the default channel for the guild it is in.
+   * @readonly
+   * @memberof DiscordChannel
+   */
+  get isDefaultChannel () {
+    return this.isGuildChannel && this.guild.default ? this.guild.default.id === this.id : undefined
+  }
+
+  /**
    * The type of channel.
    * @type {"text"|"private"|"voice"|"group"|"category"}
    * @readonly
@@ -342,7 +351,7 @@ class DiscordChannel {
    * @memberof DiscordChannel
    */
   toShortString () {
-    return `#${this.position}. ${this.name} (${this.id}) [${this.type}]`
+    return `"${this.name}" (${this.id}) [${this.type}]${this.isDefaultChannel ? ' (default)' : ''}`
   }
 }
 

@@ -5,28 +5,7 @@ const helpers = require('../lib/schemaHelpers')
 const sanitize = require('mongo-sanitize')
 const users = require('./UserTools')
 const servers = require('./ServerTools')
-
-/**
- * @typedef UnpopulatedAccount
- * @type {Object}
- * @property {string} id
- * @property {string} name
- * @property {string} [pass]
- * @property {string} avatar
- * @property {string[]} flags
- * @property {string} email
- * @property {string} type
- * @property {string} nationality
- * @property {string} status
- * @property {string} comment
- * @property {string} discordUser
- * @property {string[]} ownedServers
- * @property {boolean} acceptedTerms
- * @property {boolean} receiveEmails
- * @property {Date} createdAt
- * @property {Date} updatedAt
- * @property {Date} unlockedAt
- */
+const bCrypt = require('bcrypt')
 
 const createAccount = (data, transform = true) => {
   // Create an account.
@@ -194,21 +173,6 @@ const getNiddabotAccount = async (id, jsonFriendly = false, userOverride = undef
 }
 
 /**
- * @typedef PopulatedAccount
- * @type {Object}
- * @property {string} id
- * @property {string} name
- * @property {string} email
- * @property {string} avatar
- * @property {string} type
- * @property {string} status
- * @property {*[]} ownedServers
- * @property {*} discordUser
- * @property {string} nationality
- * @property {boolean} receiveEmails
- */
-
-/**
  * @param {string} identifier Name or Id.
  * @returns {PopulatedAccount}
  */
@@ -231,3 +195,40 @@ module.exports = {
   populateAccount: populateAccount,
   verifyDatabase: verifyDatabase
 }
+
+/**
+ * @typedef UnpopulatedAccount
+ * @type {Object}
+ * @property {string} id
+ * @property {string} name
+ * @property {string} [pass]
+ * @property {string} avatar
+ * @property {string[]} flags
+ * @property {string} email
+ * @property {string} type
+ * @property {string} nationality
+ * @property {string} status
+ * @property {string} comment
+ * @property {string} discordUser
+ * @property {string[]} ownedServers
+ * @property {boolean} acceptedTerms
+ * @property {boolean} receiveEmails
+ * @property {Date} createdAt
+ * @property {Date} updatedAt
+ * @property {Date} unlockedAt
+ */
+
+/**
+ * @typedef PopulatedAccount
+ * @type {Object}
+ * @property {string} id
+ * @property {string} name
+ * @property {string} email
+ * @property {string} avatar
+ * @property {string} type
+ * @property {string} status
+ * @property {*[]} ownedServers
+ * @property {*} discordUser
+ * @property {string} nationality
+ * @property {boolean} receiveEmails
+ */

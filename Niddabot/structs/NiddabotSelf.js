@@ -6,6 +6,7 @@ const DiscordGuild = require('./DiscordGuild')
 const DiscordUser = require('./DiscordUser')
 const DiscordChannel = require('./DiscordChannel')
 
+const helpers = require('../util/helpers')
 const statistics = require('../util/statistics')
 /* eslint-enable no-unused-vars */
 
@@ -100,12 +101,13 @@ class NiddabotSelf extends NiddabotObject {
       .setDescription('Niddabot\'s current system status.')
       .setThumbnail(this.user.avatar)
       .addField('General', [
-        `Uptime: ${super.secondsToMinutes((new Date() - this.startedAt) / 1000)}`,
+        `Uptime: ${helpers.timeToString(new Date() - this.startedAt)}`,
         `Mode: ${this.devMode ? 'Development' : 'Production'}`,
-        `Creator, Developer, & Owner: ${this.application.owner.fullName}`,
+        `Owner: ${this.application.owner.fullName}`,
         `Me: ${this.user.fullName}`,
         `Home Server: ${this.home.name}`
       ].join('\n'))
+      .addField('Guilds', this.guilds ? this.guilds.map(a => a.toString()).join('\n') : 'no guild data available.')
       .addField('Memory Stats', statistics.getMemoryUsage())
       .addField('Host Details', statistics.getSystemInfo())
   }

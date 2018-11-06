@@ -9,23 +9,25 @@ const secondsToMinutes = (seconds) => {
 }
 
 /**
- * Converts a time difference in ms to a string showing the difference in hours, minutes, and seconds.
+ * Converts a time difference in ms to a string showing the difference in days, hours, minutes, and seconds.
  * @param {number} ms 
  */
 const timeToString = ms => {
   const total = ms / 1000
 
-  const hours = Math.floor(total / 3600)
+  const days = Math.floor(total / (3600 * 24))
+  const hours = Math.floor((total % (3600 * 24)) / 3600)
   const minutes = Math.floor((total % 3600) / 60)
   const seconds = Math.floor(total % 3600 % 60)
-  
+
   const results = [
+    { value: days, type: `${days === 1 ? 'day' : 'days'}` },
     { value: hours, type: `${hours === 1 ? 'hour' : 'hours'}` },
     { value: minutes, type: `${minutes === 1 ? 'minute' : 'minutes'}` },
     { value: seconds, type: `${seconds === 1 ? 'second' : 'seconds'}` }
   ]
-  
-  return results.filter(a => a.value !== 0).map(a => `${a.value} ${a.type}`).join(', ')
+
+  return results.filter(a => a.value !== 0).map(a => `${a.value} ${a.type}`).reduce((a, b, i, arr) => { return i + 1 < arr.length ? `${a}, ${b}` : `${a}, and ${b}` })
 }
 
 /**
@@ -291,6 +293,44 @@ const getMatchingOrDefault = (def, filter, ...args) => {
   return results.length > 0 ? results.sort((a, b) => a - b)[0] : def
 }
 
+/**
+ * Returns the string limited to the specified amount of characters, default: 100.
+ * A string that is longer than the limit is trimmed down to the specified length and appended with "..."
+ * @param {string} text the text to limit.
+ * @param {number} limit the limit.
+ */
+const limitTextLength = (text, limit = 100) => {
+  if (!text || typeof text !== 'string') return undefined
+  else return text.length <= limit ? text : text.substring(0, limit - 3) + '...'
+}
+
+/**
+ * Limits a field text to the specified length, 1024 by default. This is used by Discord Rich Embed where a field can be a maximum of 1024 characters.
+ * This method takes an array and calls toString() on each element. Should an element push past the limit, it will be removed and replaced with "...".
+ * @param {{ toString () => string }[]} arr An array of values, each containing a toString method.
+ * @param {number} [lineCap] Maximum line length (length of each element). Default: 1024
+ * @param {number} [limit] The character limit. Default: 1024 (Discord RichEmbed field: 1024, Discord standard message: 2000)
+ * @param {string} [separator] The separator between each element. Default: new line
+ * @param {string} [suffix] What to end the string with if the cap is surpassed. Default: '...' (leave as null to show amount of omitted items)
+ * @returns {string} the text to insert to the field.
+ */
+const limitFieldText = (arr, lineCap = 1024, limit = 1024, separator = '\n', suffix = '...') => {
+  if (!separator) throw new Error('separator must be a valid value')
+  // for... in = iterates over an object's properties
+  // for... of = iterates over elements in a collection etc.
+  limit -= (separator.length + (suffix ? suffix.length : 7))
+  lineCap -= separator.length
+
+  arr = arr.map(a => `${limitTextLength(a.toString(), lineCap)}${separator || ''}`) // convert and optionally add line breaks
+  arr[arr.length - 1] = arr[arr.length - 1].substring(0, arr[arr.length - 1].lastIndexOf(separator)) // remove last separator
+  const capIndex = arr.findIndex((a, i) => {
+    if (arr.length >= (i + 1)) return arr.slice(0, i + 1).join('').length > limit
+    else return arr.slice(0, i).join('').length > limit
+  }) // calculate cap index
+
+  return capIndex > 1 ? [...arr.slice(0, capIndex), suffix || `(+${arr.length - capIndex})`].join('') : arr.join('')
+}
+
 module.exports = {
   secondsToMinutes: secondsToMinutes,
   timeToString: timeToString,
@@ -304,5 +344,7 @@ module.exports = {
   parseDate: parseDate,
   parseTime: parseTime,
   getTimeDifference: getTimeDifference,
-  getMatchingOrDefault: getMatchingOrDefault
+  getMatchingOrDefault: getMatchingOrDefault,
+  limitTextLength: limitTextLength,
+  limitFieldText: limitFieldText
 }

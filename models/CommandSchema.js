@@ -12,6 +12,7 @@ const commandSchema = new mongoose.Schema({
   cooldown: Number,
   cost: Number,
   name: { type: String, required: [true, 'A command needs a name.'] },
+  alias: [ { type: String } ],
   action: { type: String, required: [true, 'A command requires an action.'] },
   count: { type: Number, default: 0 },
   createdAt: { type: Date, required: true, default: Date.now },

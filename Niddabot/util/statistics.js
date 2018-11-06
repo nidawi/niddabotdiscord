@@ -32,12 +32,11 @@ const getMemoryUsage = (asString = true) => {
 const getSystemInfo = (asString = true) => {
   try {
     const data = {
-      NODE_ENV: process.env.NODE_ENV,
-      NODE_VERSION: process.version,
-      OS: process.env.OS,
-      ARCHITECTURE: process.arch,
-      PLATFORM: process.platform,
-      uptime: round(process.uptime(), 2)
+      NODE_ENV: process.env.NODE_ENV || 'no data available',
+      NODE_VERSION: process.version || 'no data available',
+      OS: process.env.OS || 'no data available',
+      ARCHITECTURE: process.arch || 'no data available',
+      PLATFORM: process.platform || 'no data available'
     }
     return (!asString) ? data : Object.entries(data).map(a => `SYSTEM ${a[0]}: ${a[1]}`).join('\n')
   } catch (err) {

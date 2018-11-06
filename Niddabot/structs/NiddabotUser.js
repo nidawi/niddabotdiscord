@@ -1,10 +1,13 @@
 // Niddabot User Class Wrapper
 /* eslint-disable no-unused-vars */
+const DiscordJs = require('discord.js')
+const Mongoose = require('mongoose')
 const DiscordUser = require('./DiscordUser')
 const niddabotAccount = require('./NiddabotAccount')
 const NiddabotReminder = require('./NiddabotReminder')
 const NiddabotTimer = require('./NiddabotTimer')
 const Collection = require('../components/Collection')
+const AccountTools = require('../AccountTools')
 /* eslint-enable no-unused-vars */
 
 class NiddabotUser {
@@ -38,6 +41,9 @@ class NiddabotUser {
     this.createdAt = user.createdAt
     this.updatedAt = user.updatedAt
 
+    /**
+     * @type {Mongoose.Model}
+     */
     this._document = undefined
     /**
      * @type {DiscordUser}
@@ -97,7 +103,7 @@ class NiddabotUser {
       get: () => this.exists && this.id
     })
     Object.defineProperty(this, 'avatar', {
-      get: () => { return (this.exists) ? `${this.discordUser.avatar}` : undefined }
+      get: () => this.exists ? this.discordUser.avatar || 'https://discordapp.com/assets/dd4dbc0016779df1378e7812eabaa04d.png' : undefined
     })
     Object.defineProperty(this, 'hasToken', {
       get: () => { return (this.tokenData && this.tokenData.accessToken) }
@@ -158,8 +164,9 @@ class NiddabotUser {
     } else throw new Error('user is not registered. Nothing to save.')
   }
   /**
-   * Sets the Niddabot rank of this user.
+   * Sets the Niddabot rank of this user, and returns the new Rank information.
    * @param {"Super User"|"Moderator"|"Admin"|"VIP"|"User"|"Server Admin"|"Server Owner"|"Server OP"} rank The name or Id of the Rank to assign the user.
+   * @param {boolean} [bypass] Whether some checks (requires token, requires mfa, etc.) should be ignored.
    * @async
    */
   async setRank (rank, bypass = false) {
@@ -175,7 +182,7 @@ class NiddabotUser {
       console.log(`${this.fullName} is now rank ${rankObj.name}.`)
       if (this._document) {
         this._document.niddabotRank.rankId = rankObj.id
-        await this._document.save()
+        await this._document.save() // Don't use this as this will mess up the saved password. Change this to update.
         console.log(`${this.fullName} new rank has been saved.`)
       }
       return rankObj
@@ -281,6 +288,29 @@ class NiddabotUser {
         `${this.niddabotAccount ? `This user has selected ${this.niddabotAccount.nationality} as their country of residence.` : 'This user has not provided a country of residence.'}\n` +
         `This user has the rank ${this.getRank()} [${this.getPrivilege()}].\n` +
         `${this.registered ? this.getTokenString() : `This user does not have a valid Access Token on record.`}`
+  }
+
+  /**
+   * Returns a RichEmbed representation of this user.
+   * @param {DiscordJs.RichEmbed} defaultEmbed
+   * @param {boolean} debug true if debug (sudo) or personal (through !me).
+   * @memberof NiddabotUser
+   */
+  toEmbed (defaultEmbed, debug = false) {
+    if (!defaultEmbed || !this.exists) return undefined
+    // Set defaults
+    defaultEmbed
+      .setThumbnail(this.avatar)
+      .setTitle(this.discordUser.username)
+      .setDescription(`${this.discordUser.fullName}`)
+      .addField('Presence', this.discordUser.presence.toString())
+
+    if (debug) {
+      defaultEmbed
+        .addField('Token', '...')
+    }
+
+    return defaultEmbed
   }
 }
 

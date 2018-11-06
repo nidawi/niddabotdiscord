@@ -72,6 +72,7 @@ const getNiddabotServer = async (id, guildId = undefined, jsonFriendly = false) 
 
   const server = new NiddabotServer(serverData)
   server.guild = await Discord.requestGuild((guildId || server.guildId), jsonFriendly)
+  if (server.guild) server.guild.server = jsonFriendly ? undefined : server
 
   return server
 }

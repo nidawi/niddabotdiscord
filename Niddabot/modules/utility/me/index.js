@@ -8,7 +8,8 @@ router.use('*', (route, msg, next) => {
   else return next()
 })
 router.use('', async (route, msg, next) => {
-  msg.channel.send(route.insertBlock(msg.niddabot.user.toString(false)))
+  // msg.channel.send(route.insertBlock(msg.niddabot.user.toString(false)))
+  msg.channel.send(msg.niddabot.user.toEmbed(route.getDefaultRichEmbed(), true))
 })
 
 router.use('token', require('./token'))

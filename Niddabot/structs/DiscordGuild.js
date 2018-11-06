@@ -5,6 +5,9 @@ const DiscordMember = require('./DiscordMember')
 const DiscordRole = require('./DiscordRole')
 const DiscordUser = require('./DiscordUser')
 const Collection = require('../components/Collection')
+const Discord = require('discord.js')
+const helpers = require('../util/helpers')
+const NiddabotServer = require('./NiddabotServer')
 /* eslint-enable no-unused-vars */
 
 /**
@@ -82,6 +85,11 @@ class DiscordGuild {
      * @type {DiscordChannel}
      */
     this.default = undefined
+
+    /**
+     * @type {NiddabotServer}
+     */
+    this.server = undefined
 
     this._tools = require('../DiscordTools')
 
@@ -200,16 +208,31 @@ class DiscordGuild {
   }
 
   /**
+   * Returns a RichEmbed representation of this object.
+   * @param {Discord.RichEmbed} defaultEmbed
+   * @memberof NiddabotSelf
+   */
+  toEmbed (defaultEmbed) {
+    return defaultEmbed
+      .setThumbnail(this.icon)
+      .setTitle(this.name)
+      .setDescription(`"${this.name}" is a Discord guild located in ${this.region} and is owned by ${this.owner.fullName}.${this.server ? ` It was registered ${this.server.createdAt.toLocaleDateString()}.` : ``}${this.isHomeServer ? ' It is Niddabot\'s Home Server.' : ''}`)
+      .addField(`Members (${this.members.length})`, helpers.limitFieldText(this.members.values().map(a => a.username), undefined, undefined, ', '))
+      .addField(`Roles (${this.roles.length})`, helpers.limitFieldText(this.roles.values().map(a => a.name), undefined, undefined, ', '))
+      .addField(`Emoji (${this.emojis.length})`, helpers.limitFieldText(this.emojis.values().map(a => a.toString()), undefined, undefined, ' ', null))
+      .addField(`Channels (${this.channels.length})`, helpers.limitFieldText(this.channels.values().sort(a => a.position).map(a => a.toShortString())))
+  }
+
+  /**
    * Returns a string representation of this guild.
+   * @param {boolean} debug Whether debug information should be included.
    * @memberof DiscordGuild
    * @returns {string}
    */
   toString (debug = false) {
-    return !debug ? `${this.name} (${this.id}) [${this.region}]${this.isHomeServer ? ' *' : ''}\n` +
-      `This guild is owned by ${this.owner.fullName}.\n` +
-      `This guild has ${this.channels.length} channels, and ${this.default ? `the default one is ${this.default.name}` : `it has no default channel`}.\n` +
-      `This guild has ${this.members.length} members.`
-      : ``
+    try {
+      return `${this.name} (${this.id}) [${this.region}] owned by ${this.owner.fullName}. It has approximately ${this.members.length} members.`
+    } catch (err) { }
   }
 }
 

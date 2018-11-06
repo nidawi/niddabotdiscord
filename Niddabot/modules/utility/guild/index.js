@@ -11,12 +11,23 @@ router.use('*', async (route, msg, next) => {
     next(new Error('guild was not found.'))
   }
 })
-router.use('', (route, msg, next) => msg.channel.send(route.insertBlock(msg.niddabot.guild.toString())))
-router.use(/\d+/, (route, msg, next) => {
-  const answer = msg.niddabot.guild.members.get(route.currentRoute)
-  if (answer) msg.channel.send(route.insertBlock(route.hasArgument('debug') && msg.niddabot.user.canPerform(999) ? answer.toString() : answer.toShortString()))
-  else msg.reply(`no user with the Id ${route.currentRoute} was found in this guild.`)
+router.use('', (route, msg, next) => msg.channel.send(msg.niddabot.guild.toEmbed(route.getDefaultRichEmbed()))) // Display current guild.
+router.use(/\d+/, async (route, msg, next) => {
+  const guild = await msg.niddabot.cache.getServer(route.currentRoute)
+  if (guild && guild.exists && guild.guild && guild.guild.exists) {
+
+    console.log(route.args.values())
+
+    msg.channel.send(guild.guild.toEmbed(route.getDefaultRichEmbed()))
+  } else msg.reply(`the provided Id, ${route.currentRoute}, does not reference an existing guild - or the guild is out-of-reach.`)
 })
+router.use('member', (route, msg, next) => {
+  if (!route.parts[0]) return msg.reply('you need to provide an Id or username.')
+  const member = msg.niddabot.guild.members.get(route.parts[0])
+  if (member) msg.channel.send(route.insertBlock(route.hasArgument('debug') && msg.niddabot.user.canPerform(999) ? member.toString() : member.toShortString()))
+  else msg.reply(`no matching member was found in this guild.`)
+})
+
 router.use('me', (route, msg, next) => {
   const answer = msg.niddabot.guild.members.get(msg.author.id)
   if (answer) msg.channel.send(route.insertBlock(answer.toShortString()))
